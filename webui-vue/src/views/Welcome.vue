@@ -1,189 +1,151 @@
 <template>
-  <div class="welcome-page">
-    <!-- 左侧：品牌 + 快速入口 -->
-    <div class="left-panel">
-      <a href="https://github.com/None9527/None_Z-image-Turbo_trainer" target="_blank" class="brand-link">
-        <div class="brand">
-          <div class="logo">
-            <span>N</span>
+  <div class="welcome-container">
+    <!-- Hero Section (紧凑版) -->
+    <div class="hero-section">
+      <div class="hero-content">
+        <a href="https://github.com/None9527/None_Z-image-Turbo_trainer" target="_blank" class="title-link">
+          <div class="logo-icon">
+            <span class="logo-text">N</span>
           </div>
-          <div class="brand-text">
-            <h1><span class="gold">None</span> Trainer</h1>
-            <p>Z-Image Turbo LoRA 训练工作室</p>
-          </div>
+          <h1 class="main-title">
+            <span class="title-gradient">None</span> Trainer
+          </h1>
+        </a>
+        <p class="tagline">Z-Image Turbo LoRA 训练工作室 · 基于 <strong>AC-RF</strong> 算法</p>
+        <div class="feature-tags">
+          <span class="tag"><el-icon><Lightning /></el-icon> 10步推理</span>
+          <span class="tag"><el-icon><Cpu /></el-icon> 硬件优化</span>
+          <span class="tag"><el-icon><TrendCharts /></el-icon> 实时监控</span>
         </div>
-      </a>
-      
-      <div class="nav-grid">
-        <div class="nav-card" @click="$router.push('/dataset')">
-          <div class="nav-icon blue"><el-icon><Picture /></el-icon></div>
-          <div class="nav-content">
-            <h3>数据集管理</h3>
-            <p>导入图片、生成缓存、Ollama 智能标注</p>
-          </div>
-          <el-icon class="nav-arrow"><ArrowRight /></el-icon>
-        </div>
-        
-        <div class="nav-card" @click="$router.push('/config')">
-          <div class="nav-icon green"><el-icon><Setting /></el-icon></div>
-          <div class="nav-content">
-            <h3>训练配置</h3>
-            <p>AC-RF 参数、LoRA 设置、优化器选择</p>
-          </div>
-          <el-icon class="nav-arrow"><ArrowRight /></el-icon>
-        </div>
-        
-        <div class="nav-card" @click="$router.push('/training')">
-          <div class="nav-icon gold"><el-icon><VideoPlay /></el-icon></div>
-          <div class="nav-content">
-            <h3>开始训练</h3>
-            <p>实时 Loss 曲线、进度监控、显存状态</p>
-          </div>
-          <el-icon class="nav-arrow"><ArrowRight /></el-icon>
-        </div>
-        
-        <div class="nav-card" @click="$router.push('/generation')">
-          <div class="nav-icon orange"><el-icon><MagicStick /></el-icon></div>
-          <div class="nav-content">
-            <h3>图像生成</h3>
-            <p>加载训练好的 LoRA 模型测试效果</p>
-          </div>
-          <el-icon class="nav-arrow"><ArrowRight /></el-icon>
-        </div>
-      </div>
-      
-      <div class="footer">
-        <span>Made with ❤️ by <strong>None</strong></span>
-        <span class="divider">·</span>
-        <span>基于 <strong>AC-RF</strong> 锚点耦合整流流算法</span>
       </div>
     </div>
-    
-    <!-- 右侧：状态面板 -->
-    <div class="right-panel">
-      <!-- 系统状态 -->
-      <div class="status-card">
-        <div class="card-header">
-          <el-icon><Monitor /></el-icon>
-          <span>系统环境</span>
-          <el-tag v-if="wsConnected" type="success" size="small">在线</el-tag>
-          <el-tag v-else type="danger" size="small">离线</el-tag>
-        </div>
-        <div class="env-grid" v-if="hasSystemInfo">
-          <div class="env-item">
-            <span class="env-label">Python</span>
-            <span class="env-value">{{ systemInfo.python }}</span>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+      <!-- Quick Actions (4列) -->
+      <div class="card glass-card quick-actions">
+        <div class="action-buttons">
+          <div class="action-item" @click="$router.push('/dataset')">
+            <div class="action-icon dataset"><el-icon><Picture /></el-icon></div>
+            <div class="action-info">
+              <span class="action-name">数据集</span>
+              <span class="action-desc">导入、缓存、标注</span>
+            </div>
+            <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
-          <div class="env-item">
-            <span class="env-label">PyTorch</span>
-            <span class="env-value">{{ systemInfo.pytorch }}</span>
+          <div class="action-item" @click="$router.push('/config')">
+            <div class="action-icon config"><el-icon><Setting /></el-icon></div>
+            <div class="action-info">
+              <span class="action-name">配置</span>
+              <span class="action-desc">参数、LoRA、优化</span>
+            </div>
+            <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
-          <div class="env-item">
-            <span class="env-label">CUDA</span>
-            <span class="env-value">{{ systemInfo.cuda }}</span>
+          <div class="action-item" @click="$router.push('/training')">
+            <div class="action-icon train"><el-icon><VideoPlay /></el-icon></div>
+            <div class="action-info">
+              <span class="action-name">训练</span>
+              <span class="action-desc">Loss、进度监控</span>
+            </div>
+            <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
-          <div class="env-item">
-            <span class="env-label">Diffusers</span>
-            <span class="env-value">{{ systemInfo.diffusers }}</span>
+          <div class="action-item" @click="$router.push('/generation')">
+            <div class="action-icon generate"><el-icon><MagicStick /></el-icon></div>
+            <div class="action-info">
+              <span class="action-name">生成</span>
+              <span class="action-desc">测试 LoRA</span>
+            </div>
+            <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
-          <div class="env-item">
-            <span class="env-label">Accelerate</span>
-            <span class="env-value">{{ systemInfo.accelerate || 'N/A' }}</span>
-          </div>
-          <div class="env-item">
-            <span class="env-label">Transformers</span>
-            <span class="env-value">{{ systemInfo.transformers || 'N/A' }}</span>
-          </div>
-        </div>
-        <div v-else class="loading-state">
-          <el-icon class="is-loading"><Loading /></el-icon>
-          <span>连接服务中...</span>
         </div>
       </div>
-      
-      <!-- 模型状态 -->
-      <div class="status-card model-card">
-        <div class="card-header">
-          <el-icon><Box /></el-icon>
-          <span>基础模型</span>
-          <el-tag :type="modelStatus.exists ? 'success' : 'warning'" size="small">
+
+      <!-- System Status (紧凑) -->
+      <div class="card glass-card system-status">
+        <h3 class="card-title">
+          <el-icon><Monitor /></el-icon> 系统
+          <el-tag v-if="wsConnected" type="success" size="small" effect="plain">在线</el-tag>
+          <el-tag v-else type="danger" size="small" effect="plain">离线</el-tag>
+        </h3>
+        <div class="status-grid" v-if="hasSystemInfo">
+          <div class="status-item">
+            <span class="label">Python</span>
+            <span class="value">{{ systemInfo.python }}</span>
+          </div>
+          <div class="status-item">
+            <span class="label">PyTorch</span>
+            <span class="value">{{ systemInfo.pytorch }}</span>
+          </div>
+          <div class="status-item">
+            <span class="label">CUDA</span>
+            <span class="value">{{ systemInfo.cuda }}</span>
+          </div>
+          <div class="status-item">
+            <span class="label">Diffusers</span>
+            <span class="value">{{ systemInfo.diffusers }}</span>
+          </div>
+        </div>
+        <div v-else class="loading-placeholder">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <span>连接中...</span>
+        </div>
+      </div>
+
+      <!-- Model Status (紧凑) -->
+      <div class="card glass-card model-card">
+        <h3 class="card-title">
+          <el-icon><Box /></el-icon> 模型
+          <el-tag :type="modelStatus.exists ? 'success' : 'warning'" size="small" effect="dark">
             {{ modelStatus.exists ? '就绪' : '需下载' }}
           </el-tag>
-        </div>
+        </h3>
         
-        <div class="model-status" v-if="modelStatus.summary">
-          <div class="model-ring">
-            <svg viewBox="0 0 100 100">
-              <circle class="ring-bg" cx="50" cy="50" r="42" />
-              <circle class="ring-progress" cx="50" cy="50" r="42" :style="{ strokeDashoffset: progressOffset }" />
+        <div class="model-compact" v-if="modelStatus.summary">
+          <div class="model-progress-mini">
+            <svg viewBox="0 0 36 36">
+              <circle class="bg" cx="18" cy="18" r="15.5" />
+              <circle class="progress" cx="18" cy="18" r="15.5" :style="{ strokeDashoffset: progressOffsetMini }" />
             </svg>
-            <div class="ring-text">
-              <span class="ring-num">{{ validPercent }}</span>
-              <span class="ring-unit">%</span>
-            </div>
+            <span class="progress-num">{{ validPercent }}%</span>
           </div>
-          
-          <div class="model-details">
-            <div class="model-stat">
-              <span class="stat-num success">{{ modelStatus.summary.valid_components }}</span>
-              <span class="stat-label">有效组件</span>
-            </div>
-            <div class="model-stat">
-              <span class="stat-num">{{ modelStatus.summary.total_components }}</span>
-              <span class="stat-label">总组件</span>
-            </div>
+          <div class="component-mini">
+            <span v-for="(comp, name) in modelStatus.details" :key="name" class="comp-dot" :class="{ valid: comp.valid }">
+              <el-icon v-if="comp.valid"><CircleCheck /></el-icon>
+              <el-icon v-else><Close /></el-icon>
+            </span>
           </div>
         </div>
-        
-        <div class="component-tags" v-if="modelStatus.details">
-          <span v-for="(comp, name) in modelStatus.details" :key="name" class="comp-tag" :class="{ valid: comp.valid, missing: !comp.exists }">
-            <el-icon><CircleCheck v-if="comp.valid" /><Warning v-else-if="comp.exists" /><Close v-else /></el-icon>
-            {{ getComponentName(name) }}
-          </span>
-        </div>
-        
-        <div class="model-action" v-if="!modelStatus.exists">
-          <el-button v-if="!isDownloading" type="primary" @click="startDownload" :loading="startingDownload">
-            <el-icon><Download /></el-icon>
-            下载 Z-Image-Turbo 模型
+
+        <div class="model-actions" v-if="!modelStatus.exists">
+          <el-button v-if="!isDownloading" type="primary" size="small" @click="startDownload" :loading="startingDownload">
+            <el-icon><Download /></el-icon> 下载模型
           </el-button>
-          <div v-else class="download-progress">
-            <el-progress :percentage="downloadProgress" :stroke-width="12" />
-            <span>{{ downloadSizeText }}</span>
+          <div v-else class="download-status">
+            <el-progress :percentage="downloadProgress" :stroke-width="6" />
+            <span class="download-text">{{ downloadSizeText }}</span>
           </div>
         </div>
       </div>
-      
-      <!-- 技术特性 -->
-      <div class="feature-grid">
-        <div class="feature-item">
-          <span class="feature-icon">🎯</span>
-          <span>锚点耦合采样</span>
+
+      <!-- Tech & Contact (合并) -->
+      <div class="card glass-card info-card">
+        <div class="info-split">
+          <div class="tech-section">
+            <div class="highlight"><span>🎯</span> 锚点耦合</div>
+            <div class="highlight"><span>📉</span> Min-SNR</div>
+            <div class="highlight"><span>⚡</span> Flash Attn</div>
+            <div class="highlight"><span>🔧</span> 硬件适配</div>
+          </div>
+          <div class="contact-section">
+            <div class="contact-row" @click="copyEmail('lihaonan1082@gmail.com')">
+              <span>📧</span> lihaonan1082@gmail.com
+            </div>
+            <div class="contact-row" @click="copyEmail('592532681@qq.com')">
+              <span>📮</span> 592532681@qq.com
+            </div>
+          </div>
         </div>
-        <div class="feature-item">
-          <span class="feature-icon">📉</span>
-          <span>Min-SNR 加权</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">⚡</span>
-          <span>Flash Attention</span>
-        </div>
-        <div class="feature-item">
-          <span class="feature-icon">🔧</span>
-          <span>自动硬件适配</span>
-        </div>
-      </div>
-      
-      <!-- 联系方式 -->
-      <div class="contact-bar">
-        <div class="contact-item" @click="copyEmail('lihaonan1082@gmail.com')">
-          <span>📧</span>
-          <span>lihaonan1082@gmail.com</span>
-        </div>
-        <div class="contact-item" @click="copyEmail('592532681@qq.com')">
-          <span>📮</span>
-          <span>592532681@qq.com</span>
-        </div>
+        <div class="author">Made with ❤️ by <strong>None</strong></div>
       </div>
     </div>
   </div>
@@ -194,9 +156,9 @@ import { ref, computed } from 'vue'
 import { useSystemStore } from '@/stores/system'
 import { useWebSocketStore } from '@/stores/websocket'
 import { 
-  Picture, Setting, VideoPlay, Monitor, Box,
-  CircleCheck, Warning, Close, Loading,
-  ArrowRight, MagicStick, Download
+  Picture, Setting, VideoPlay, Cpu,
+  CircleCheck, Close, Loading, Box, Monitor,
+  ArrowRight, MagicStick, Download, Lightning, TrendCharts
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
@@ -216,7 +178,7 @@ const isDownloading = computed(() => downloadStatus.value.status === 'running')
 const downloadProgress = computed(() => downloadStatus.value.progress)
 const downloadSizeText = computed(() => {
   const gb = downloadStatus.value.downloaded_size_gb || 0
-  return gb > 0 ? `已下载 ${gb.toFixed(2)} GB` : '准备中...'
+  return gb > 0 ? `${gb.toFixed(1)} GB` : '准备中...'
 })
 
 const validPercent = computed(() => {
@@ -225,23 +187,10 @@ const validPercent = computed(() => {
   return Math.round((valid_components / total_components) * 100)
 })
 
-const progressOffset = computed(() => {
-  const circumference = 2 * Math.PI * 42
+const progressOffsetMini = computed(() => {
+  const circumference = 2 * Math.PI * 15.5
   return circumference - (validPercent.value / 100) * circumference
 })
-
-const componentNames: Record<string, string> = {
-  'transformer': 'Transformer',
-  'vae': 'VAE',
-  'text_encoder': 'Text Encoder',
-  'tokenizer': 'Tokenizer',
-  'scheduler': 'Scheduler',
-  'model_index.json': 'Index'
-}
-
-function getComponentName(name: string): string {
-  return componentNames[name] || name
-}
 
 async function refreshModelStatus() {
   try {
@@ -273,450 +222,446 @@ function copyEmail(email: string) {
 </script>
 
 <style scoped>
-.welcome-page {
+.welcome-container {
   height: 100%;
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 0;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-primary);
   overflow: hidden;
 }
 
-/* 左侧面板 */
-.left-panel {
-  display: flex;
-  flex-direction: column;
-  padding: 48px;
-  background: linear-gradient(135deg, rgba(240, 180, 41, 0.02) 0%, transparent 50%);
+/* Hero Section - 紧凑 */
+.hero-section {
+  padding: 24px 40px 16px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(240, 180, 41, 0.03) 0%, transparent 100%);
+  flex-shrink: 0;
 }
 
-.brand-link {
+.title-link {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
   text-decoration: none;
-  color: inherit;
   cursor: pointer;
   transition: transform 0.2s;
-  display: inline-block;
-  margin-bottom: 48px;
 }
 
-.brand-link:hover {
-  transform: translateX(4px);
+.title-link:hover {
+  transform: scale(1.02);
 }
 
-.brand-link:hover .logo {
-  box-shadow: 0 12px 40px rgba(240, 180, 41, 0.4);
-  transform: rotate(-5deg) scale(1.05);
+.title-link:hover .logo-icon {
+  box-shadow: 0 8px 30px rgba(240, 180, 41, 0.4);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.title-link:hover .main-title {
+  text-shadow: 0 0 20px rgba(240, 180, 41, 0.3);
 }
 
-.logo {
-  width: 72px;
-  height: 72px;
+.logo-icon {
+  width: 56px;
+  height: 56px;
   background: linear-gradient(135deg, #f0b429 0%, #e67e22 100%);
-  border-radius: 18px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 32px rgba(240, 180, 41, 0.3);
-  transition: all 0.3s ease;
+  box-shadow: 0 6px 24px rgba(240, 180, 41, 0.3);
+  margin-bottom: 8px;
+  transition: box-shadow 0.3s;
 }
 
-.logo span {
-  font-size: 40px;
+.logo-text {
+  font-size: 32px;
   font-weight: 800;
   color: #1a1a1d;
 }
 
-.brand-text h1 {
-  font-size: 2.8rem;
+.main-title {
+  font-size: 2.5rem;
   font-weight: 800;
-  margin: 0;
+  margin: 0 0 4px 0;
   letter-spacing: -1px;
+  transition: text-shadow 0.3s;
 }
 
-.brand-text h1 .gold {
-  background: linear-gradient(135deg, #f0b429 0%, #e67e22 100%);
+.title-gradient {
+  background: linear-gradient(135deg, #f0b429 0%, #f39c12 50%, #e67e22 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.brand-text p {
-  margin: 4px 0 0 0;
+.tagline {
+  font-size: 0.95rem;
   color: var(--text-muted);
-  font-size: 1rem;
+  margin: 0 0 12px 0;
 }
 
-/* 导航网格 */
-.nav-grid {
-  flex: 1;
+.tagline strong {
+  color: var(--primary);
+}
+
+.feature-tags {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.nav-card {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 24px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.25s ease;
-}
-
-.nav-card:hover {
-  border-color: var(--primary);
-  background: rgba(240, 180, 41, 0.05);
-  transform: translateX(8px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.nav-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
+  gap: 12px;
   justify-content: center;
-  font-size: 24px;
-  flex-shrink: 0;
 }
 
-.nav-icon.blue { background: rgba(64, 158, 255, 0.15); color: #409eff; }
-.nav-icon.green { background: rgba(103, 194, 58, 0.15); color: #67c23a; }
-.nav-icon.gold { background: rgba(240, 180, 41, 0.15); color: #f0b429; }
-.nav-icon.orange { background: rgba(230, 126, 34, 0.15); color: #e67e22; }
-
-.nav-content {
-  flex: 1;
-}
-
-.nav-content h3 {
-  margin: 0 0 4px 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.nav-content p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-.nav-arrow {
-  font-size: 20px;
-  color: var(--text-muted);
-  transition: all 0.2s;
-}
-
-.nav-card:hover .nav-arrow {
-  color: var(--primary);
-  transform: translateX(4px);
-}
-
-/* 底部 */
-.footer {
-  margin-top: auto;
-  padding-top: 24px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.footer strong {
-  color: var(--primary);
-}
-
-.footer .divider {
-  margin: 0 12px;
-  opacity: 0.3;
-}
-
-/* 右侧面板 */
-.right-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 32px;
-  background: var(--bg-secondary);
-  border-left: 1px solid var(--border-color);
-  overflow-y: auto;
-}
-
-/* 状态卡片 */
-.status-card {
-  padding: 20px;
-  background: var(--bg-darker);
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
-}
-
-.card-header {
+.feature-tags .tag {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 4px;
+  padding: 5px 12px;
+  background: rgba(240, 180, 41, 0.1);
+  border: 1px solid rgba(240, 180, 41, 0.2);
+  border-radius: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.feature-tags .tag .el-icon {
+  color: var(--primary);
+  font-size: 12px;
+}
+
+/* Dashboard Grid - 紧凑2x2 */
+.dashboard-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+  padding: 0 40px 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Cards */
+.card {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px 0;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.card-header .el-icon {
+.card-title .el-icon {
   color: var(--primary);
 }
 
-.card-header .el-tag {
+.card-title .el-tag {
   margin-left: auto;
 }
 
-/* 环境信息 */
-.env-grid {
+/* Quick Actions - 横向4列 */
+.quick-actions {
+  grid-column: 1 / -1;
+}
+
+.action-buttons {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
-.env-item {
+.action-item {
   display: flex;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background: var(--bg-primary);
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-darker);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-item:hover {
+  border-color: var(--primary);
+  background: rgba(240, 180, 41, 0.05);
+  transform: translateY(-2px);
+}
+
+.action-icon {
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
-}
-
-.env-label {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-
-.env-value {
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 500;
-  font-family: var(--font-mono);
-}
-
-.loading-state {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 32px;
-  color: var(--text-muted);
-}
-
-/* 模型状态 */
-.model-status {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 16px;
-}
-
-.model-ring {
-  position: relative;
-  width: 90px;
-  height: 90px;
+  font-size: 16px;
   flex-shrink: 0;
 }
 
-.model-ring svg {
-  transform: rotate(-90deg);
+.action-icon.dataset { background: rgba(64, 158, 255, 0.15); color: #409eff; }
+.action-icon.config { background: rgba(103, 194, 58, 0.15); color: #67c23a; }
+.action-icon.train { background: rgba(240, 180, 41, 0.15); color: #f0b429; }
+.action-icon.generate { background: rgba(230, 126, 34, 0.15); color: #e67e22; }
+
+.action-info {
+  flex: 1;
+  min-width: 0;
 }
 
-.model-ring circle {
+.action-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+  display: block;
+}
+
+.action-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.action-item .arrow {
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.action-item:hover .arrow {
+  color: var(--primary);
+  transform: translateX(3px);
+}
+
+/* System Status - 紧凑 */
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--bg-darker);
+  border-radius: 6px;
+}
+
+.status-item .label {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.status-item .value {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+.loading-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Model Card - 紧凑 */
+.model-compact {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.model-progress-mini {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.model-progress-mini svg {
+  transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
+}
+
+.model-progress-mini circle {
   fill: none;
-  stroke-width: 8;
+  stroke-width: 3;
   stroke-linecap: round;
 }
 
-.ring-bg {
-  stroke: var(--bg-primary);
-}
-
-.ring-progress {
+.model-progress-mini .bg { stroke: var(--bg-darker); }
+.model-progress-mini .progress {
   stroke: var(--success);
-  stroke-dasharray: 264;
+  stroke-dasharray: 97.4;
   transition: stroke-dashoffset 0.5s ease;
 }
 
-.ring-text {
+.progress-num {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  text-align: center;
-}
-
-.ring-num {
-  font-size: 24px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.ring-unit {
+.component-mini {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.comp-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--bg-darker);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 12px;
   color: var(--text-muted);
 }
 
-.model-details {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.model-stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-num {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.stat-num.success {
+.comp-dot.valid {
+  background: rgba(103, 194, 58, 0.15);
   color: var(--success);
 }
 
-.stat-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 2px;
+.model-actions {
+  margin-top: 12px;
 }
 
-/* 组件标签 */
-.component-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
+.download-status {
+  max-width: 200px;
 }
 
-.comp-tag {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  background: var(--bg-primary);
-  border-radius: 6px;
+.download-text {
+  display: block;
+  margin-top: 4px;
   font-size: 11px;
   color: var(--text-muted);
-}
-
-.comp-tag.valid {
-  background: rgba(103, 194, 58, 0.1);
-  color: var(--success);
-}
-
-.comp-tag.missing {
-  opacity: 0.5;
-}
-
-.comp-tag .el-icon {
-  font-size: 12px;
-}
-
-/* 模型操作 */
-.model-action {
   text-align: center;
 }
 
-.download-progress {
-  max-width: 100%;
+/* Info Card - 合并技术和联系 */
+.info-card {
+  display: flex;
+  flex-direction: column;
 }
 
-.download-progress span {
-  display: block;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--text-muted);
-  text-align: center;
+.info-split {
+  flex: 1;
+  display: flex;
+  gap: 16px;
 }
 
-/* 技术特性 */
-.feature-grid {
+.tech-section {
+  flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 6px;
 }
 
-.feature-item {
+.highlight {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 6px;
+  padding: 8px 10px;
   background: var(--bg-darker);
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  font-size: 13px;
+  border-radius: 6px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
-.feature-icon {
-  font-size: 18px;
+.highlight span:first-child {
+  font-size: 14px;
 }
 
-/* 联系方式 */
-.contact-bar {
+.contact-section {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: auto;
+  gap: 6px;
 }
 
-.contact-item {
+.contact-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 8px;
+  padding: 10px 12px;
   background: var(--bg-darker);
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  font-size: 13px;
+  border-radius: 6px;
+  font-size: 11px;
   color: var(--text-secondary);
   font-family: var(--font-mono);
   cursor: pointer;
   transition: all 0.2s;
+  border: 1px solid transparent;
 }
 
-.contact-item:hover {
+.contact-row:hover {
   border-color: var(--primary);
   color: var(--text-primary);
-  background: rgba(240, 180, 41, 0.05);
 }
 
-/* 响应式 */
-@media (max-width: 1000px) {
-  .welcome-page {
+.contact-row span:first-child {
+  font-size: 14px;
+}
+
+.author {
+  text-align: center;
+  padding-top: 10px;
+  margin-top: auto;
+  color: var(--text-muted);
+  font-size: 11px;
+  border-top: 1px solid var(--border-color);
+}
+
+.author strong {
+  color: var(--primary);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .dashboard-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    padding: 0 16px 16px;
   }
   
-  .left-panel {
-    padding: 32px;
+  .hero-section {
+    padding: 16px;
   }
   
-  .right-panel {
-    border-left: none;
-    border-top: 1px solid var(--border-color);
-  }
-  
-  .brand-text h1 {
+  .main-title {
     font-size: 2rem;
   }
   
-  .nav-grid {
-    display: grid;
+  .action-buttons {
     grid-template-columns: 1fr 1fr;
+  }
+  
+  .info-split {
+    flex-direction: column;
   }
 }
 </style>
