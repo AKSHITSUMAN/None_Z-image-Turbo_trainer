@@ -1,95 +1,72 @@
 <template>
   <div class="welcome-container">
-    <!-- Hero Section -->
+    <!-- Hero Section (紧凑版) -->
     <div class="hero-section">
       <div class="hero-content">
-        <div class="logo-area">
+        <a href="https://github.com/None9527/None_Z-image-Turbo_trainer" target="_blank" class="title-link">
           <div class="logo-icon">
             <span class="logo-text">N</span>
           </div>
-        </div>
-        <h1 class="main-title">
-          <span class="title-gradient">None</span> Trainer
-        </h1>
-        <p class="tagline">Z-Image Turbo LoRA 训练工作室</p>
-        <p class="description">
-          基于 <strong>AC-RF</strong>（锚点耦合整流流）算法的高效 LoRA 微调工具
-        </p>
-        
+          <h1 class="main-title">
+            <span class="title-gradient">None</span> Trainer
+          </h1>
+        </a>
+        <p class="tagline">Z-Image Turbo LoRA 训练工作室 · 基于 <strong>AC-RF</strong> 算法</p>
         <div class="feature-tags">
-          <span class="tag"><el-icon><Lightning /></el-icon> 10步快速推理</span>
-          <span class="tag"><el-icon><Cpu /></el-icon> 自动硬件优化</span>
-          <span class="tag"><el-icon><TrendCharts /></el-icon> 实时训练监控</span>
+          <span class="tag"><el-icon><Lightning /></el-icon> 10步推理</span>
+          <span class="tag"><el-icon><Cpu /></el-icon> 硬件优化</span>
+          <span class="tag"><el-icon><TrendCharts /></el-icon> 实时监控</span>
         </div>
-      </div>
-      
-      <div class="hero-decoration">
-        <div class="deco-circle c1"></div>
-        <div class="deco-circle c2"></div>
-        <div class="deco-circle c3"></div>
       </div>
     </div>
 
+    <!-- Dashboard Grid -->
     <div class="dashboard-grid">
-      <!-- Quick Actions -->
+      <!-- Quick Actions (4列) -->
       <div class="card glass-card quick-actions">
-        <h3 class="card-title">
-          <el-icon><Operation /></el-icon>
-          快速开始
-        </h3>
         <div class="action-buttons">
           <div class="action-item" @click="$router.push('/dataset')">
-            <div class="action-icon dataset">
-              <el-icon><Picture /></el-icon>
-            </div>
+            <div class="action-icon dataset"><el-icon><Picture /></el-icon></div>
             <div class="action-info">
-              <span class="action-name">数据集管理</span>
-              <span class="action-desc">导入图片、生成缓存、Ollama 标注</span>
+              <span class="action-name">数据集</span>
+              <span class="action-desc">导入、缓存、标注</span>
             </div>
             <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
           <div class="action-item" @click="$router.push('/config')">
-            <div class="action-icon config">
-              <el-icon><Setting /></el-icon>
-            </div>
+            <div class="action-icon config"><el-icon><Setting /></el-icon></div>
             <div class="action-info">
-              <span class="action-name">训练配置</span>
-              <span class="action-desc">AC-RF 参数、LoRA 设置、优化器</span>
+              <span class="action-name">配置</span>
+              <span class="action-desc">参数、LoRA、优化</span>
             </div>
             <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
           <div class="action-item" @click="$router.push('/training')">
-            <div class="action-icon train">
-              <el-icon><VideoPlay /></el-icon>
-            </div>
+            <div class="action-icon train"><el-icon><VideoPlay /></el-icon></div>
             <div class="action-info">
-              <span class="action-name">开始训练</span>
-              <span class="action-desc">实时 Loss 曲线、进度监控</span>
+              <span class="action-name">训练</span>
+              <span class="action-desc">Loss、进度监控</span>
             </div>
             <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
           <div class="action-item" @click="$router.push('/generation')">
-            <div class="action-icon generate">
-              <el-icon><MagicStick /></el-icon>
-            </div>
+            <div class="action-icon generate"><el-icon><MagicStick /></el-icon></div>
             <div class="action-info">
-              <span class="action-name">图像生成</span>
-              <span class="action-desc">测试训练好的 LoRA 模型</span>
+              <span class="action-name">生成</span>
+              <span class="action-desc">测试 LoRA</span>
             </div>
             <el-icon class="arrow"><ArrowRight /></el-icon>
           </div>
         </div>
       </div>
 
-      <!-- System Status -->
+      <!-- System Status (紧凑) -->
       <div class="card glass-card system-status">
         <h3 class="card-title">
-          <el-icon><Monitor /></el-icon>
-          系统状态
-          <el-tag v-if="wsConnected" type="success" size="small" effect="plain" class="status-tag">在线</el-tag>
-          <el-tag v-else type="danger" size="small" effect="plain" class="status-tag">离线</el-tag>
+          <el-icon><Monitor /></el-icon> 系统
+          <el-tag v-if="wsConnected" type="success" size="small" effect="plain">在线</el-tag>
+          <el-tag v-else type="danger" size="small" effect="plain">离线</el-tag>
         </h3>
-        
         <div class="status-grid" v-if="hasSystemInfo">
           <div class="status-item">
             <span class="label">Python</span>
@@ -107,14 +84,6 @@
             <span class="label">Diffusers</span>
             <span class="value">{{ systemInfo.diffusers }}</span>
           </div>
-          <div class="status-item">
-            <span class="label">Accelerate</span>
-            <span class="value">{{ systemInfo.accelerate || 'N/A' }}</span>
-          </div>
-          <div class="status-item">
-            <span class="label">Transformers</span>
-            <span class="value">{{ systemInfo.transformers || 'N/A' }}</span>
-          </div>
         </div>
         <div v-else class="loading-placeholder">
           <el-icon class="is-loading"><Loading /></el-icon>
@@ -122,157 +91,74 @@
         </div>
       </div>
 
-      <!-- Model Status -->
+      <!-- Model Status (紧凑) -->
       <div class="card glass-card model-card">
         <h3 class="card-title">
-          <el-icon><Box /></el-icon>
-          基础模型
-          <el-tag :type="modelStatus.exists ? 'success' : 'warning'" size="small" effect="dark" class="status-tag">
+          <el-icon><Box /></el-icon> 模型
+          <el-tag :type="modelStatus.exists ? 'success' : 'warning'" size="small" effect="dark">
             {{ modelStatus.exists ? '就绪' : '需下载' }}
           </el-tag>
         </h3>
         
-        <div class="model-info" v-if="modelStatus.summary">
-          <div class="model-progress-ring">
-            <svg viewBox="0 0 100 100">
-              <circle class="bg" cx="50" cy="50" r="45" />
-              <circle 
-                class="progress" 
-                cx="50" cy="50" r="45" 
-                :style="{ strokeDashoffset: progressOffset }"
-              />
+        <div class="model-compact" v-if="modelStatus.summary">
+          <div class="model-progress-mini">
+            <svg viewBox="0 0 36 36">
+              <circle class="bg" cx="18" cy="18" r="15.5" />
+              <circle class="progress" cx="18" cy="18" r="15.5" :style="{ strokeDashoffset: progressOffsetMini }" />
             </svg>
-            <div class="progress-text">
-              <span class="number">{{ validPercent }}</span>
-              <span class="percent">%</span>
-            </div>
+            <span class="progress-num">{{ validPercent }}%</span>
           </div>
-          <div class="model-stats">
-            <div class="stat">
-              <span class="stat-value valid">{{ modelStatus.summary.valid_components }}</span>
-              <span class="stat-label">有效组件</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">{{ modelStatus.summary.total_components }}</span>
-              <span class="stat-label">总组件</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="component-list" v-if="modelStatus.details">
-          <div 
-            v-for="(comp, name) in modelStatus.details" 
-            :key="name"
-            class="component-item"
-            :class="{ valid: comp.valid, missing: !comp.exists }"
-          >
-            <el-icon class="comp-icon">
-              <CircleCheck v-if="comp.valid" />
-              <Warning v-else-if="comp.exists" />
-              <Close v-else />
-            </el-icon>
-            <span class="comp-name">{{ getComponentName(name) }}</span>
+          <div class="component-mini">
+            <span v-for="(comp, name) in modelStatus.details" :key="name" class="comp-dot" :class="{ valid: comp.valid }">
+              <el-icon v-if="comp.valid"><CircleCheck /></el-icon>
+              <el-icon v-else><Close /></el-icon>
+            </span>
           </div>
         </div>
 
         <div class="model-actions" v-if="!modelStatus.exists">
-          <el-button 
-            v-if="!isDownloading" 
-            type="primary" 
-            @click="startDownload" 
-            :loading="startingDownload"
-          >
-            <el-icon><Download /></el-icon>
-            下载 Z-Image-Turbo 模型
+          <el-button v-if="!isDownloading" type="primary" size="small" @click="startDownload" :loading="startingDownload">
+            <el-icon><Download /></el-icon> 下载模型
           </el-button>
           <div v-else class="download-status">
-            <el-progress :percentage="downloadProgress" :stroke-width="10" />
+            <el-progress :percentage="downloadProgress" :stroke-width="6" />
             <span class="download-text">{{ downloadSizeText }}</span>
           </div>
         </div>
       </div>
 
-      <!-- About -->
-      <div class="card glass-card about-card">
-        <h3 class="card-title">
-          <el-icon><InfoFilled /></el-icon>
-          关于
-        </h3>
-        <div class="about-content">
-          <p>
-            <strong>None Trainer</strong> 是专为 Z-Image-Turbo 模型设计的 LoRA 训练工具，
-            采用创新的 <em>AC-RF（锚点耦合整流流）</em> 采样策略，
-            实现高效稳定的少步推理模型微调。
-          </p>
-          <div class="tech-highlights">
-            <div class="highlight">
-              <span class="highlight-icon">🎯</span>
-              <span>锚点耦合采样</span>
-            </div>
-            <div class="highlight">
-              <span class="highlight-icon">📉</span>
-              <span>Min-SNR 加权</span>
-            </div>
-            <div class="highlight">
-              <span class="highlight-icon">🔧</span>
-              <span>自动硬件适配</span>
-            </div>
-            <div class="highlight">
-              <span class="highlight-icon">⚡</span>
-              <span>Flash Attention</span>
-            </div>
+      <!-- Tech & Contact (合并) -->
+      <div class="card glass-card info-card">
+        <div class="info-split">
+          <div class="tech-section">
+            <div class="highlight"><span>🎯</span> 锚点耦合</div>
+            <div class="highlight"><span>📉</span> Min-SNR</div>
+            <div class="highlight"><span>⚡</span> Flash Attn</div>
+            <div class="highlight"><span>🔧</span> 硬件适配</div>
           </div>
-          <div class="author">
-            <span>Made with ❤️ by <strong>None</strong></span>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Contact -->
-      <div class="card glass-card contact-card">
-        <h3 class="card-title">
-          <el-icon><Message /></el-icon>
-          合作交流
-        </h3>
-        <div class="contact-content">
-          <p class="contact-intro">欢迎技术交流、问题反馈、商务合作</p>
-          <div class="contact-list">
-            <div class="contact-item">
-              <span class="contact-icon">📧</span>
-              <div class="contact-info">
-                <span class="contact-label">Gmail</span>
-                <span class="contact-value">lihaonan1082@gmail.com</span>
-              </div>
-              <el-button size="small" text @click="copyEmail('lihaonan1082@gmail.com')">
-                <el-icon><CopyDocument /></el-icon>
-              </el-button>
+          <div class="contact-section">
+            <div class="contact-row" @click="copyEmail('lihaonan1082@gmail.com')">
+              <span>📧</span> lihaonan1082@gmail.com
             </div>
-            <div class="contact-item">
-              <span class="contact-icon">📮</span>
-              <div class="contact-info">
-                <span class="contact-label">QQ邮箱</span>
-                <span class="contact-value">592532681@qq.com</span>
-              </div>
-              <el-button size="small" text @click="copyEmail('592532681@qq.com')">
-                <el-icon><CopyDocument /></el-icon>
-              </el-button>
+            <div class="contact-row" @click="copyEmail('592532681@qq.com')">
+              <span>📮</span> 592532681@qq.com
             </div>
           </div>
         </div>
+        <div class="author">Made with ❤️ by <strong>None</strong></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, markRaw } from 'vue'
+import { ref, computed } from 'vue'
 import { useSystemStore } from '@/stores/system'
 import { useWebSocketStore } from '@/stores/websocket'
 import { 
-  Picture, Setting, VideoPlay, Cpu, Edit, Document, Clock, List, 
-  CircleCheck, Warning, Close, Loading, Box, Monitor, Operation,
-  ArrowRight, MagicStick, Download, InfoFilled, Lightning, TrendCharts,
-  Message, CopyDocument
+  Picture, Setting, VideoPlay, Cpu,
+  CircleCheck, Close, Loading, Box, Monitor,
+  ArrowRight, MagicStick, Download, Lightning, TrendCharts
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
@@ -292,7 +178,7 @@ const isDownloading = computed(() => downloadStatus.value.status === 'running')
 const downloadProgress = computed(() => downloadStatus.value.progress)
 const downloadSizeText = computed(() => {
   const gb = downloadStatus.value.downloaded_size_gb || 0
-  return gb > 0 ? `已下载 ${gb.toFixed(2)} GB` : '准备中...'
+  return gb > 0 ? `${gb.toFixed(1)} GB` : '准备中...'
 })
 
 const validPercent = computed(() => {
@@ -301,23 +187,10 @@ const validPercent = computed(() => {
   return Math.round((valid_components / total_components) * 100)
 })
 
-const progressOffset = computed(() => {
-  const circumference = 2 * Math.PI * 45
+const progressOffsetMini = computed(() => {
+  const circumference = 2 * Math.PI * 15.5
   return circumference - (validPercent.value / 100) * circumference
 })
-
-const componentNames: Record<string, string> = {
-  'transformer': 'Transformer',
-  'vae': 'VAE',
-  'text_encoder': 'Text Encoder',
-  'tokenizer': 'Tokenizer',
-  'scheduler': 'Scheduler',
-  'model_index.json': 'Model Index'
-}
-
-function getComponentName(name: string): string {
-  return componentNames[name] || name
-}
 
 async function refreshModelStatus() {
   try {
@@ -350,53 +223,67 @@ function copyEmail(email: string) {
 
 <style scoped>
 .welcome-container {
-  min-height: 100%;
-  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-primary);
-}
-
-/* Hero Section */
-.hero-section {
-  position: relative;
-  padding: 60px 40px 40px;
-  text-align: center;
   overflow: hidden;
+}
+
+/* Hero Section - 紧凑 */
+.hero-section {
+  padding: 24px 40px 16px;
+  text-align: center;
   background: linear-gradient(180deg, rgba(240, 180, 41, 0.03) 0%, transparent 100%);
+  flex-shrink: 0;
 }
 
-.hero-content {
-  position: relative;
-  z-index: 1;
+.title-link {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
-.logo-area {
-  margin-bottom: 20px;
+.title-link:hover {
+  transform: scale(1.02);
+}
+
+.title-link:hover .logo-icon {
+  box-shadow: 0 8px 30px rgba(240, 180, 41, 0.4);
+}
+
+.title-link:hover .main-title {
+  text-shadow: 0 0 20px rgba(240, 180, 41, 0.3);
 }
 
 .logo-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto;
+  width: 56px;
+  height: 56px;
   background: linear-gradient(135deg, #f0b429 0%, #e67e22 100%);
-  border-radius: 20px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 40px rgba(240, 180, 41, 0.3);
+  box-shadow: 0 6px 24px rgba(240, 180, 41, 0.3);
+  margin-bottom: 8px;
+  transition: box-shadow 0.3s;
 }
 
 .logo-text {
-  font-size: 42px;
+  font-size: 32px;
   font-weight: 800;
   color: #1a1a1d;
-  font-family: 'SF Pro Display', -apple-system, sans-serif;
 }
 
 .main-title {
-  font-size: 3.5rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  margin: 0 0 12px 0;
-  letter-spacing: -2px;
+  margin: 0 0 4px 0;
+  letter-spacing: -1px;
+  transition: text-shadow 0.3s;
 }
 
 .title-gradient {
@@ -407,112 +294,68 @@ function copyEmail(email: string) {
 }
 
 .tagline {
-  font-size: 1.3rem;
-  color: var(--text-secondary);
-  margin: 0 0 8px 0;
-  font-weight: 500;
-}
-
-.description {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-muted);
-  margin: 0 0 24px 0;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 0 12px 0;
 }
 
-.description strong {
+.tagline strong {
   color: var(--primary);
 }
 
 .feature-tags {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   justify-content: center;
-  flex-wrap: wrap;
 }
 
 .feature-tags .tag {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 4px;
+  padding: 5px 12px;
   background: rgba(240, 180, 41, 0.1);
   border: 1px solid rgba(240, 180, 41, 0.2);
-  border-radius: 20px;
-  font-size: 13px;
+  border-radius: 16px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
 .feature-tags .tag .el-icon {
   color: var(--primary);
+  font-size: 12px;
 }
 
-/* Decoration */
-.hero-decoration {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
-.deco-circle {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.5;
-}
-
-.deco-circle.c1 {
-  width: 300px;
-  height: 300px;
-  top: -100px;
-  right: -50px;
-  background: radial-gradient(circle, rgba(240, 180, 41, 0.1) 0%, transparent 70%);
-}
-
-.deco-circle.c2 {
-  width: 200px;
-  height: 200px;
-  bottom: 0;
-  left: 10%;
-  background: radial-gradient(circle, rgba(240, 180, 41, 0.08) 0%, transparent 70%);
-}
-
-.deco-circle.c3 {
-  width: 150px;
-  height: 150px;
-  top: 30%;
-  left: 5%;
-  background: radial-gradient(circle, rgba(240, 180, 41, 0.06) 0%, transparent 70%);
-}
-
-/* Dashboard Grid */
+/* Dashboard Grid - 紧凑2x2 */
 .dashboard-grid {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  padding: 0 40px 40px;
-  max-width: 1200px;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 16px;
+  padding: 0 40px 24px;
+  max-width: 1100px;
   margin: 0 auto;
+  width: 100%;
+  min-height: 0;
 }
 
 /* Cards */
 .card {
-  padding: 24px;
-  border-radius: 16px;
+  padding: 16px;
+  border-radius: 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .card-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 20px 0;
-  font-size: 1rem;
+  gap: 6px;
+  margin: 0 0 12px 0;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -521,29 +364,29 @@ function copyEmail(email: string) {
   color: var(--primary);
 }
 
-.status-tag {
+.card-title .el-tag {
   margin-left: auto;
 }
 
-/* Quick Actions */
+/* Quick Actions - 横向4列 */
 .quick-actions {
   grid-column: 1 / -1;
 }
 
 .action-buttons {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
 }
 
 .action-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
+  gap: 10px;
+  padding: 12px;
   background: var(--bg-darker);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -555,86 +398,76 @@ function copyEmail(email: string) {
 }
 
 .action-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
-.action-icon.dataset {
-  background: rgba(64, 158, 255, 0.15);
-  color: #409eff;
-}
-
-.action-icon.config {
-  background: rgba(103, 194, 58, 0.15);
-  color: #67c23a;
-}
-
-.action-icon.train {
-  background: rgba(240, 180, 41, 0.15);
-  color: #f0b429;
-}
-
-.action-icon.generate {
-  background: rgba(230, 126, 34, 0.15);
-  color: #e67e22;
-}
+.action-icon.dataset { background: rgba(64, 158, 255, 0.15); color: #409eff; }
+.action-icon.config { background: rgba(103, 194, 58, 0.15); color: #67c23a; }
+.action-icon.train { background: rgba(240, 180, 41, 0.15); color: #f0b429; }
+.action-icon.generate { background: rgba(230, 126, 34, 0.15); color: #e67e22; }
 
 .action-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  min-width: 0;
 }
 
 .action-name {
   font-weight: 600;
+  font-size: 13px;
   color: var(--text-primary);
+  display: block;
 }
 
 .action-desc {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .action-item .arrow {
   color: var(--text-muted);
   transition: transform 0.2s;
+  flex-shrink: 0;
 }
 
 .action-item:hover .arrow {
   color: var(--primary);
-  transform: translateX(4px);
+  transform: translateX(3px);
 }
 
-/* System Status */
+/* System Status - 紧凑 */
 .status-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
 .status-item {
   display: flex;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 8px 10px;
   background: var(--bg-darker);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .status-item .label {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .status-item .value {
   color: var(--text-primary);
   font-weight: 500;
-  font-size: 13px;
+  font-size: 11px;
   font-family: var(--font-mono);
 }
 
@@ -642,253 +475,166 @@ function copyEmail(email: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 40px;
+  gap: 6px;
+  padding: 20px;
   color: var(--text-muted);
+  font-size: 12px;
 }
 
-/* Model Card */
-.model-info {
+/* Model Card - 紧凑 */
+.model-compact {
   display: flex;
   align-items: center;
-  gap: 24px;
-  margin-bottom: 20px;
+  gap: 16px;
 }
 
-.model-progress-ring {
+.model-progress-mini {
   position: relative;
-  width: 100px;
-  height: 100px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
 }
 
-.model-progress-ring svg {
+.model-progress-mini svg {
   transform: rotate(-90deg);
+  width: 100%;
+  height: 100%;
 }
 
-.model-progress-ring circle {
+.model-progress-mini circle {
   fill: none;
-  stroke-width: 8;
+  stroke-width: 3;
   stroke-linecap: round;
 }
 
-.model-progress-ring .bg {
-  stroke: var(--bg-darker);
-}
-
-.model-progress-ring .progress {
+.model-progress-mini .bg { stroke: var(--bg-darker); }
+.model-progress-mini .progress {
   stroke: var(--success);
-  stroke-dasharray: 283;
+  stroke-dasharray: 97.4;
   transition: stroke-dashoffset 0.5s ease;
 }
 
-.progress-text {
+.progress-num {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  text-align: center;
-}
-
-.progress-text .number {
-  font-size: 24px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.progress-text .percent {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.model-stats {
+.component-mini {
   display: flex;
-  gap: 24px;
-}
-
-.model-stats .stat {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.stat-value.valid {
-  color: var(--success);
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.component-list {
-  display: flex;
+  gap: 6px;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
 }
 
-.component-item {
+.comp-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--bg-darker);
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--bg-darker);
-  border-radius: 6px;
+  justify-content: center;
   font-size: 12px;
-}
-
-.component-item.valid {
-  background: rgba(103, 194, 58, 0.1);
-}
-
-.component-item.valid .comp-icon {
-  color: var(--success);
-}
-
-.component-item.missing {
-  opacity: 0.5;
-}
-
-.component-item.missing .comp-icon {
   color: var(--text-muted);
 }
 
-.comp-name {
-  color: var(--text-secondary);
+.comp-dot.valid {
+  background: rgba(103, 194, 58, 0.15);
+  color: var(--success);
 }
 
 .model-actions {
-  text-align: center;
+  margin-top: 12px;
 }
 
 .download-status {
-  max-width: 300px;
-  margin: 0 auto;
+  max-width: 200px;
 }
 
 .download-text {
   display: block;
-  margin-top: 8px;
-  font-size: 13px;
+  margin-top: 4px;
+  font-size: 11px;
   color: var(--text-muted);
+  text-align: center;
 }
 
-/* About Card */
-.about-content p {
-  color: var(--text-secondary);
-  line-height: 1.7;
-  margin: 0 0 16px 0;
+/* Info Card - 合并技术和联系 */
+.info-card {
+  display: flex;
+  flex-direction: column;
 }
 
-.about-content strong {
-  color: var(--primary);
+.info-split {
+  flex: 1;
+  display: flex;
+  gap: 16px;
 }
 
-.about-content em {
-  color: var(--text-primary);
-  font-style: normal;
-  font-weight: 500;
-}
-
-.tech-highlights {
+.tech-section {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
 
 .highlight {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
+  gap: 6px;
+  padding: 8px 10px;
   background: var(--bg-darker);
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: 6px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
-.highlight-icon {
-  font-size: 16px;
+.highlight span:first-child {
+  font-size: 14px;
 }
 
-/* Contact Card */
-.contact-card {
-  grid-column: 2;
-}
-
-.contact-intro {
-  margin: 0 0 16px 0;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.contact-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.contact-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--bg-darker);
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  transition: all 0.2s ease;
-}
-
-.contact-item:hover {
-  border-color: var(--primary);
-  background: rgba(240, 180, 41, 0.05);
-}
-
-.contact-icon {
-  font-size: 24px;
-}
-
-.contact-info {
+.contact-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
 }
 
-.contact-label {
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-darker);
+  border-radius: 6px;
   font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.contact-value {
-  font-size: 14px;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
 }
 
-.contact-item .el-button {
-  color: var(--text-muted);
+.contact-row:hover {
+  border-color: var(--primary);
+  color: var(--text-primary);
 }
 
-.contact-item .el-button:hover {
-  color: var(--primary);
+.contact-row span:first-child {
+  font-size: 14px;
 }
 
 .author {
   text-align: center;
-  padding-top: 16px;
+  padding-top: 10px;
+  margin-top: auto;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 11px;
+  border-top: 1px solid var(--border-color);
 }
 
 .author strong {
@@ -899,19 +645,23 @@ function copyEmail(email: string) {
 @media (max-width: 900px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
-    padding: 0 20px 20px;
+    padding: 0 16px 16px;
   }
   
   .hero-section {
-    padding: 40px 20px 30px;
+    padding: 16px;
   }
   
   .main-title {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
   
   .action-buttons {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .info-split {
+    flex-direction: column;
   }
 }
 </style>
