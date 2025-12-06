@@ -59,6 +59,21 @@
         </div>
       </div>
 
+      <!-- 广告位 -->
+      <div class="ad-banner">
+        <div class="ad-content">
+          <div class="ad-glow"></div>
+          <div class="ad-text">
+            <span class="ad-icon">📢</span>
+            <span class="ad-main">广告位招租</span>
+            <span class="ad-sub">由于没想好打什么广告...</span>
+          </div>
+          <div class="ad-particles">
+            <span v-for="i in 12" :key="i" class="particle" :style="{ '--i': i }"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- 底部信息 -->
       <div class="footer-info">
         <div class="tech-tags">
@@ -440,10 +455,177 @@ refreshModelStatus()
   transition: all 0.2s;
 }
 
+/* 广告位 */
+.ad-banner {
+  margin-top: 24px;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border: 1px solid rgba(240, 180, 41, 0.2);
+}
+
+.ad-content {
+  position: relative;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.ad-glow {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(240, 180, 41, 0.1) 25%,
+    rgba(240, 180, 41, 0.3) 50%,
+    rgba(240, 180, 41, 0.1) 75%,
+    transparent 100%
+  );
+  animation: glow-sweep 3s ease-in-out infinite;
+}
+
+@keyframes glow-sweep {
+  0% { transform: translateX(-25%); }
+  100% { transform: translateX(25%); }
+}
+
+.ad-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.ad-icon {
+  font-size: 28px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.ad-main {
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(
+    90deg, 
+    #f0b429 0%, 
+    #ff6b6b 25%, 
+    #4ecdc4 50%, 
+    #45b7d1 75%, 
+    #f0b429 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-flow 3s linear infinite;
+}
+
+@keyframes gradient-flow {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+.ad-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  animation: fade-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fade-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+.ad-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 50%;
+  opacity: 0;
+  animation: particle-float 4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.3s);
+}
+
+.particle:nth-child(odd) {
+  background: #4ecdc4;
+}
+
+.particle:nth-child(3n) {
+  background: #ff6b6b;
+}
+
+.particle:nth-child(1) { left: 5%; top: 80%; }
+.particle:nth-child(2) { left: 15%; top: 60%; }
+.particle:nth-child(3) { left: 25%; top: 90%; }
+.particle:nth-child(4) { left: 35%; top: 70%; }
+.particle:nth-child(5) { left: 45%; top: 85%; }
+.particle:nth-child(6) { left: 55%; top: 65%; }
+.particle:nth-child(7) { left: 65%; top: 95%; }
+.particle:nth-child(8) { left: 75%; top: 75%; }
+.particle:nth-child(9) { left: 85%; top: 60%; }
+.particle:nth-child(10) { left: 95%; top: 80%; }
+.particle:nth-child(11) { left: 10%; top: 50%; }
+.particle:nth-child(12) { left: 90%; top: 55%; }
+
+@keyframes particle-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0);
+  }
+  20% {
+    opacity: 0.8;
+    transform: translateY(-10px) scale(1);
+  }
+  80% {
+    opacity: 0.4;
+    transform: translateY(-40px) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(0);
+  }
+}
+
+.ad-banner:hover .ad-glow {
+  animation-duration: 1.5s;
+}
+
+.ad-banner:hover .ad-main {
+  animation-duration: 1.5s;
+}
+
+.ad-banner:hover .particle {
+  animation-duration: 2s;
+}
+
 /* 底部信息 */
 .footer-info {
-  margin-top: auto;
-  padding-top: 20px;
+  margin-top: 20px;
+  padding-top: 0;
 }
 
 .tech-tags {
