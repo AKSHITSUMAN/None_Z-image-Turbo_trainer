@@ -82,6 +82,7 @@ def parse_args():
     # 训练控制 (Epoch 模式)
     parser.add_argument("--num_train_epochs", type=int, default=10, help="训练 Epoch 数")
     parser.add_argument("--save_every_n_epochs", type=int, default=1, help="保存间隔 (Epoch)")
+    parser.add_argument("--output_name", type=str, default="zimage-lora", help="LoRA 输出文件名")
     
     # 兼容性保留 (会被自动覆盖)
     parser.add_argument("--max_train_steps", type=int, default=None, help="最大训练步数 (自动计算)")
@@ -572,12 +573,12 @@ def main():
                 
         # Epoch 结束，保存检查点
         if (epoch + 1) % args.save_every_n_epochs == 0:
-            save_path = Path(args.output_dir) / f"acrf_lora_epoch{epoch+1}.safetensors"
+            save_path = Path(args.output_dir) / f"{args.output_name}_epoch{epoch+1}.safetensors"
             network.save_weights(save_path, dtype=weight_dtype)
             logger.info(f"\n[SAVE] 保存检查点 (Epoch {epoch+1}): {save_path}")
     
     # 保存最终模型
-    final_path = Path(args.output_dir) / "acrf_lora_final.safetensors"
+    final_path = Path(args.output_dir) / f"{args.output_name}_final.safetensors"
     network.save_weights(final_path, dtype=weight_dtype)
     
     # 停止内存优化器

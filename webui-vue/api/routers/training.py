@@ -435,6 +435,7 @@ def generate_acrf_toml_config(config: Dict[str, Any]) -> str:
         f"network_alpha = {config.get('network', {}).get('alpha', 4.0)}",
         "",
         "[training]",
+        f'output_name = "{config.get("training", {}).get("output_name", "zimage-lora")}"',
         f'optimizer_type = "{config.get("optimizer", {}).get("type", "AdamW8bit")}"',
         f"learning_rate = {config.get('training', {}).get('learning_rate', 0.0001)}",
         f"weight_decay = {config.get('training', {}).get('weight_decay', 0.01)}",
