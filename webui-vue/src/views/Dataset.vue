@@ -557,11 +557,6 @@
           <div class="form-hint">将此词添加到所有标注开头，用于 LoRA 训练触发</div>
         </el-form-item>
         
-        <el-form-item label="思考模式">
-          <el-switch v-model="ollamaConfig.enableThink" />
-          <span class="switch-label">启用模型思考（qwen3-vl 等需要开启）</span>
-          <div class="form-hint">💡 qwen3-vl 默认需要开启；llava/moondream 等传统模型请关闭</div>
-        </el-form-item>
       </el-form>
       
       <!-- 进度显示 -->
@@ -911,8 +906,7 @@ const ollamaConfig = ref({
 示例输出：1个女孩, 黑发, 齐肩发, 白色连衣裙, 手摸脸, 微笑`,
   maxLongEdge: 1024,
   skipExisting: true,
-  triggerWord: '',  // 触发词，添加到每个标注开头
-  enableThink: true  // 默认开启思考模式（qwen3-vl 等模型需要）
+  triggerWord: ''  // 触发词，添加到每个标注开头
 })
 const ollamaStatus = ref({
   running: false,
@@ -1631,8 +1625,7 @@ async function startOllamaTagging() {
       prompt: ollamaConfig.value.prompt,
       max_long_edge: ollamaConfig.value.maxLongEdge,
       skip_existing: ollamaConfig.value.skipExisting,
-      trigger_word: ollamaConfig.value.triggerWord,
-      enable_think: ollamaConfig.value.enableThink
+      trigger_word: ollamaConfig.value.triggerWord
     })
     
     if (res.data.total === 0) {

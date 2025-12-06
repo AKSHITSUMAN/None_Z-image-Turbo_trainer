@@ -417,12 +417,11 @@ async def delete_images(request: DeleteImagesRequest):
 class OllamaTagRequest(BaseModel):
     dataset_path: str
     ollama_url: str = "http://localhost:11434"
-    model: str = "llava"
-    prompt: str = "Describe this image in detail."
+    model: str = "llava:13b"
+    prompt: str = "Describe this image in detail for AI training. Focus on: subject, clothing, pose, expression. Output: comma-separated tags."
     max_long_edge: int = 1024  # 长边最大尺寸
     skip_existing: bool = True  # 跳过已有标注
     trigger_word: str = ""  # 触发词，添加到每个标注开头
-    enable_think: bool = False  # 是否启用思考模式（某些模型如 deepseek、qwen3 支持）
 
 # 标注状态
 tagging_state = {
@@ -467,7 +466,7 @@ async def stop_tagging():
 
 
 def run_tagging_subprocess(dataset_path: str, ollama_url: str, model: str, prompt: str, 
-                           max_long_edge: int, trigger_word: str, enable_think: bool, skip_existing: bool):
+                           max_long_edge: int, trigger_word: str, skip_existing: bool):
     """在子进程中运行标注脚本"""
     global tagging_state
     import subprocess
@@ -489,8 +488,6 @@ def run_tagging_subprocess(dataset_path: str, ollama_url: str, model: str, promp
     
     if trigger_word:
         cmd.extend(["--trigger_word", trigger_word])
-    if enable_think:
-        cmd.append("--enable_think")
     if skip_existing:
         cmd.append("--skip_existing")
     
@@ -616,7 +613,6 @@ async def start_tagging(request: OllamaTagRequest):
             request.prompt,
             request.max_long_edge,
             request.trigger_word,
-            request.enable_think,
             request.skip_existing
         ),
         daemon=True
