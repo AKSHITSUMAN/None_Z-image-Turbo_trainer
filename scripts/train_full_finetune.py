@@ -360,13 +360,15 @@ def main():
         logger.info("  [OK] 使用 Adafactor 节省显存")
     
     # 9. 创建学习率调度器
+    # 注意：lr_scheduler.step() 只在优化器步骤时调用（sync_gradients 时）
+    # 所以 num_warmup_steps 和 num_training_steps 应该是优化器步数，不需要乘以梯度累积
     from diffusers.optimization import get_scheduler
-    logger.info(f"[SCHED] 初始化调度器: {args.lr_scheduler} (warmup={args.lr_warmup_steps})")
+    logger.info(f"[SCHED] 初始化调度器: {args.lr_scheduler} (warmup={args.lr_warmup_steps}, total_steps={args.max_train_steps})")
     lr_scheduler = get_scheduler(
         args.lr_scheduler,
         optimizer=optimizer,
-        num_warmup_steps=args.lr_warmup_steps * args.gradient_accumulation_steps,
-        num_training_steps=args.max_train_steps * args.gradient_accumulation_steps,
+        num_warmup_steps=args.lr_warmup_steps,
+        num_training_steps=args.max_train_steps,
         num_cycles=args.lr_num_cycles,
     )
     
