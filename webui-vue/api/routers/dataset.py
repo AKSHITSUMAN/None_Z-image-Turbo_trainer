@@ -462,13 +462,27 @@ async def stop_tagging():
     """停止标注"""
     global tagging_state
     tagging_state["running"] = False
+    
     # 终止子进程
-    if hasattr(tagging_state, 'process') and tagging_state.get('process'):
+    process = tagging_state.get('process')
+    if process and process.poll() is None:
+        pid = process.pid
+        print(f"[Tagging] Stopping process (PID: {pid})...")
         try:
-            tagging_state['process'].terminate()
-        except:
-            pass
-    return {"success": True}
+            # 先优雅终止
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except:
+                # 强制杀死
+                process.kill()
+                process.wait(timeout=3)
+            print(f"[Tagging] Process stopped (PID: {pid})")
+        except Exception as e:
+            print(f"[Tagging] Error stopping process: {e}")
+        tagging_state['process'] = None
+    
+    return {"success": True, "message": "标注已停止"}
 
 
 def run_tagging_subprocess(dataset_path: str, ollama_url: str, model: str, prompt: str, 
@@ -503,6 +517,12 @@ def run_tagging_subprocess(dataset_path: str, ollama_url: str, model: str, promp
     env["PYTHONUNBUFFERED"] = "1"
     
     try:
+        # Windows: CREATE_NO_WINDOW + CREATE_NEW_PROCESS_GROUP 便于终止
+        if os.name == 'nt':
+            creationflags = subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            creationflags = 0
+        
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -512,7 +532,7 @@ def run_tagging_subprocess(dataset_path: str, ollama_url: str, model: str, promp
             errors='replace',
             bufsize=1,
             env=env,
-            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            creationflags=creationflags
         )
         
         tagging_state['process'] = process
@@ -522,7 +542,12 @@ def run_tagging_subprocess(dataset_path: str, ollama_url: str, model: str, promp
         
         for line in iter(process.stdout.readline, ''):
             if not tagging_state["running"]:
-                process.terminate()
+                print("[Tagging] Stop requested, terminating...")
+                try:
+                    process.terminate()
+                    process.wait(timeout=5)
+                except:
+                    process.kill()
                 break
             
             line = line.strip()
