@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument("--model", type=str, default="llava:13b", help="视觉模型名称")
     parser.add_argument("--prompt", type=str, default=None, help="自定义提示词")
     parser.add_argument("--trigger_word", type=str, default="", help="触发词（添加到标注开头）")
-    parser.add_argument("--max_long_edge", type=int, default=1024, help="图片最长边限制")
+    parser.add_argument("--max_long_edge", type=int, default=512, help="图片最长边限制")
     parser.add_argument("--skip_existing", action="store_true", default=True, help="跳过已标注图片")
     parser.add_argument("--timeout", type=int, default=180, help="API 超时时间（秒）")
     parser.add_argument("--delay", type=float, default=0.2, help="请求间隔（秒）")
@@ -48,7 +48,7 @@ def get_image_paths(input_dir: Path, skip_existing: bool = True) -> list:
     return sorted(image_paths)
 
 
-def resize_for_api(img_path: Path, max_long_edge: int = 1024) -> bytes:
+def resize_for_api(img_path: Path, max_long_edge: int = 512) -> bytes:
     """缩放图片并返回 JPEG 字节 - 完全参照用户脚本"""
     with Image.open(img_path) as im:
         # 转换为 RGB 模式

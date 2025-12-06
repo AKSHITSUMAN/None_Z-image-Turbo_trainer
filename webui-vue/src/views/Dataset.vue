@@ -810,7 +810,7 @@ const clearCacheOptions = ref({
 const showResizeDialog = ref(false)
 const resizing = ref(false)
 const resizeConfig = ref({
-  maxLongEdge: 1024,
+  maxLongEdge: 512,
   quality: 95,
   sharpen: 0.3
 })
@@ -936,7 +936,7 @@ const ollamaConfig = ref({
 4. 简洁明了，不要写长句
 
 示例输出：1个女孩, 黑发, 齐肩发, 白色连衣裙, 手摸脸, 微笑`,
-  maxLongEdge: 1024,
+  maxLongEdge: 512,
   skipExisting: true,
   triggerWord: ''  // 触发词，添加到每个标注开头
 })

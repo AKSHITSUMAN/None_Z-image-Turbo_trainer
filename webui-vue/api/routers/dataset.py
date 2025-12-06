@@ -419,7 +419,7 @@ class OllamaTagRequest(BaseModel):
     ollama_url: str = "http://localhost:11434"
     model: str = "llava:13b"
     prompt: str = "Describe this image in detail for AI training. Focus on: subject, clothing, pose, expression. Output: comma-separated tags."
-    max_long_edge: int = 1024  # 长边最大尺寸
+    max_long_edge: int = 512  # 长边最大尺寸
     skip_existing: bool = True  # 跳过已有标注
     trigger_word: str = ""  # 触发词，添加到每个标注开头
 
