@@ -371,29 +371,10 @@
               <el-slider v-model="config.acrf.jitter_scale" :min="0" :max="0.1" :step="0.01" :show-tooltip="false" class="slider-flex" />
               <el-input-number v-model="config.acrf.jitter_scale" :min="0" :max="0.1" :step="0.01" controls-position="right" class="input-fixed" />
             </div>
-
-            <div class="subsection-label">损失函数模式 (LOSS MODE)</div>
-            <div class="form-row-full">
-              <label>
-                损失模式
-                <el-tooltip content="standard=基础MSE, frequency=频域感知(锐化细节), style=风格结构(学习光影色调), unified=统一模式(两者结合)" placement="top">
-                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
-                </el-tooltip>
-              </label>
-              <el-select v-model="config.training.loss_mode" style="width: 100%">
-                <el-option label="Standard (基础MSE)" value="standard" />
-                <el-option label="Frequency (频域感知 - 锐化细节)" value="frequency" />
-                <el-option label="Style (风格结构 - 光影色调)" value="style" />
-                <el-option label="Unified (统一模式 - 两者结合)" value="unified" />
-              </el-select>
-            </div>
-            
-            <!-- Min-SNR 加权参数（所有 loss 模式通用） -->
-            <div class="subsection-label">Min-SNR 加权 (适用于所有模式)</div>
             <div class="control-row">
               <span class="label">
                 SNR Gamma
-                <el-tooltip content="Min-SNR 截断值，防止低噪区过拟合细节，0=禁用，推荐 5.0" placement="top">
+                <el-tooltip content="Min-SNR 截断值，平衡不同时间步的 loss 贡献，0=禁用，推荐 5.0" placement="top">
                   <el-icon class="help-icon"><QuestionFilled /></el-icon>
                 </el-tooltip>
               </span>
@@ -409,6 +390,22 @@
               </span>
               <el-slider v-model="config.acrf.snr_floor" :min="0" :max="0.5" :step="0.01" :show-tooltip="false" class="slider-flex" />
               <el-input-number v-model="config.acrf.snr_floor" :min="0" :max="0.5" :step="0.01" controls-position="right" class="input-fixed" />
+            </div>
+
+            <div class="subsection-label">损失函数模式 (LOSS MODE)</div>
+            <div class="form-row-full">
+              <label>
+                损失模式
+                <el-tooltip content="standard=基础MSE, frequency=频域感知(锐化细节), style=风格结构(学习光影色调), unified=统一模式(两者结合)" placement="top">
+                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                </el-tooltip>
+              </label>
+              <el-select v-model="config.training.loss_mode" style="width: 100%">
+                <el-option label="Standard (基础MSE)" value="standard" />
+                <el-option label="Frequency (频域感知 - 锐化细节)" value="frequency" />
+                <el-option label="Style (风格结构 - 光影色调)" value="style" />
+                <el-option label="Unified (统一模式 - 两者结合)" value="unified" />
+              </el-select>
             </div>
             
             <!-- Standard 模式参数 -->
