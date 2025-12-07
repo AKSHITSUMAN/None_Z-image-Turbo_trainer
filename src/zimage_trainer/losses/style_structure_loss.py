@@ -369,7 +369,9 @@ class LatentStyleStructureLoss(StyleStructureLoss):
         pred_L_flat = pred_L.view(pred_L.shape[0], -1)
         target_L_flat = target_L.view(target_L.shape[0], -1)
         cos_sim = F.cosine_similarity(pred_L_flat, target_L_flat, dim=1).mean()
-        loss_struct = 1.0 - cos_sim
+        # 使用张量减法避免 Python float 导致的类型提升
+        one = torch.ones(1, device=pred_v.device, dtype=pred_v.dtype)
+        loss_struct = one.squeeze() - cos_sim
         
         # 2. 光影学习 (Channel 0 统计量)
         loss_light = self.moments_loss(pred_L, target_L)

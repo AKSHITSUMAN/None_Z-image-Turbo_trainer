@@ -164,8 +164,11 @@ class FrequencyAwareLoss(nn.Module):
         pred_low_flat = pred_low.view(pred_low.shape[0], -1)
         target_low_flat = target_low.view(target_low.shape[0], -1)
         
+        # 确保 cosine_similarity 结果保持正确的 dtype
         cos_sim = F.cosine_similarity(pred_low_flat, target_low_flat, dim=1)
-        loss_lf_direction = (1 - cos_sim).mean()
+        # 使用张量减法避免 Python float 导致的类型提升
+        one = torch.ones(1, device=pred_v.device, dtype=pred_v.dtype)
+        loss_lf_direction = (one - cos_sim).mean()
         
         # 可选：低频幅度约束（防止发灰）
         # 保持与 pred_v 相同的 dtype，避免混合精度问题

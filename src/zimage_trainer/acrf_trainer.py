@@ -203,7 +203,10 @@ class ACRFTrainer:
         # Flatten to (B, -1) for cosine similarity
         pred_flat = model_output.view(model_output.shape[0], -1)
         target_flat = target_velocity.view(target_velocity.shape[0], -1)
-        loss_cosine = 1 - F.cosine_similarity(pred_flat, target_flat, dim=1).mean()
+        cos_sim = F.cosine_similarity(pred_flat, target_flat, dim=1).mean()
+        # 使用张量减法避免 Python int/float 导致的类型提升
+        one = torch.ones(1, device=model_output.device, dtype=model_output.dtype)
+        loss_cosine = one.squeeze() - cos_sim
         
         # 3. FFT Loss (频域一致性)
         if lambda_fft > 0:
