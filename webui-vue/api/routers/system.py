@@ -58,8 +58,9 @@ MODEL_SPECS = {
     },
     "longcat": {
         "name": "LongCat-Image",
-        "model_id": None,  # 无自动下载
+        "model_id": "meituan-longcat/LongCat-Image",
         "path_env": "LONGCAT_MODEL_PATH",
+        "default_path": "longcat_models",  # 默认下载目录
         "expected_files": {
             "transformer": {
                 "required": True,
@@ -547,7 +548,9 @@ async def get_model_status(model_type: str = "zimage"):
             longcat_path = os.environ.get("LONGCAT_MODEL_PATH", "")
             if not longcat_path:
                 # 尝试常见路径
+                default_path = spec.get("default_path", "longcat_models")
                 possible_paths = [
+                    PROJECT_ROOT / default_path,  # 项目内的下载目录
                     Path("D:/AI/LongCat-Image/models"),
                     Path(MODEL_PATH).parent / "longcat-image",
                 ]
@@ -555,7 +558,10 @@ async def get_model_status(model_type: str = "zimage"):
                     if p.exists():
                         longcat_path = str(p)
                         break
-            model_path = Path(longcat_path) if longcat_path else Path("")
+                # 如果都不存在，使用默认下载目录
+                if not longcat_path:
+                    longcat_path = str(PROJECT_ROOT / default_path)
+            model_path = Path(longcat_path)
         else:
             model_path = Path(MODEL_PATH)
         
@@ -673,21 +679,47 @@ async def verify_from_modelscope():
         }
 
 @router.post("/download-model")
-async def download_model():
-    """Download model from ModelScope"""
+async def download_model(model_type: str = "zimage"):
+    """Download model from ModelScope
+    
+    Args:
+        model_type: 模型类型 (zimage, longcat)
+    """
     if state.download_process and state.download_process.poll() is None:
         raise HTTPException(status_code=400, detail="Download already in progress")
 
     try:
-        model_path = Path(MODEL_PATH)
+        # 获取模型规格
+        if model_type not in MODEL_SPECS:
+            model_type = "zimage"
+        
+        spec = MODEL_SPECS[model_type]
+        model_id = spec.get("model_id")
+        
+        if not model_id:
+            raise HTTPException(status_code=400, detail=f"Model {model_type} does not support auto-download")
+        
+        # 确定下载目录
+        if model_type == "zimage":
+            model_path = Path(MODEL_PATH)
+        else:
+            # 其他模型使用独立目录
+            default_path = spec.get("default_path", f"{model_type}_models")
+            model_path = PROJECT_ROOT / default_path
+        
         model_path.mkdir(parents=True, exist_ok=True)
         
         # Command to download using python script
         cmd = [
             sys.executable, 
             str(PROJECT_ROOT / "scripts" / "download_model.py"),
-            str(model_path)
+            str(model_path),
+            model_id  # 传入模型 ID
         ]
+        
+        state.add_log(f"开始下载 {spec['name']} 模型...", "info")
+        state.add_log(f"ModelScope ID: {model_id}", "info")
+        state.add_log(f"下载目录: {model_path}", "info")
         
         # Start download in background
         state.download_process = subprocess.Popen(
@@ -701,7 +733,15 @@ async def download_model():
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
         )
         
-        return {"success": True, "message": "Download started"}
+        return {
+            "success": True, 
+            "message": f"{spec['name']} 下载已启动",
+            "model_type": model_type,
+            "model_id": model_id,
+            "path": str(model_path)
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start download: {str(e)}")
 

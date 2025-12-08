@@ -195,25 +195,15 @@
         </div>
 
         <el-button 
-          v-if="!currentModelStatus.exists && !isDownloading && selectedModelType === 'zimage'" 
+          v-if="!currentModelStatus.exists && !isDownloading" 
           type="primary" 
           @click="startDownload" 
           :loading="startingDownload"
           class="download-btn"
         >
           <el-icon><Download /></el-icon>
-          下载 Z-Image-Turbo 模型
+          下载 {{ currentModelName }} 模型
         </el-button>
-
-        <el-alert 
-          v-if="selectedModelType === 'longcat' && !currentModelStatus.exists"
-          type="info"
-          :closable="false"
-          show-icon
-          style="margin-top: 8px"
-        >
-          LongCat-Image 需要手动配置模型路径
-        </el-alert>
         
         <div v-if="isDownloading" class="download-progress">
           <el-progress :percentage="downloadProgress" :stroke-width="8" />
@@ -269,6 +259,14 @@ const modelStatusMap = ref<Record<string, any>>({
 })
 
 const currentModelStatus = computed(() => modelStatusMap.value[selectedModelType.value] || { exists: false, details: null, summary: null })
+
+const currentModelName = computed(() => {
+  const names: Record<string, string> = {
+    'zimage': 'Z-Image-Turbo',
+    'longcat': 'LongCat-Image'
+  }
+  return names[selectedModelType.value] || selectedModelType.value
+})
 
 const startingDownload = ref(false)
 
@@ -330,8 +328,8 @@ async function refreshModelStatus(modelType?: string) {
 async function startDownload() {
   startingDownload.value = true
   try {
-    await axios.post('/api/system/download-model')
-    ElMessage.success('下载任务已启动')
+    const res = await axios.post(`/api/system/download-model?model_type=${selectedModelType.value}`)
+    ElMessage.success(`${currentModelName.value} 下载任务已启动`)
   } catch (e: any) {
     ElMessage.error('启动下载失败: ' + (e.response?.data?.detail || e.message))
   } finally {
@@ -1041,3 +1039,6 @@ refreshModelStatus()
   }
 }
 </style>
+
+
+
