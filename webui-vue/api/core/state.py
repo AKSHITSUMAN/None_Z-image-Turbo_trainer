@@ -100,7 +100,9 @@ download_progress: Dict[str, Any] = {
     "downloaded_gb": 0,
     "total_gb": 32,  # 默认预估
     "speed": 0,
-    "speed_unit": "MB"
+    "speed_unit": "MB",
+    "model_type": "",  # 正在下载的模型类型
+    "model_name": ""   # 正在下载的模型名称
 }
 
 def update_download_progress(**kwargs):
@@ -114,6 +116,8 @@ def reset_download_progress():
     download_progress["total_gb"] = 32
     download_progress["speed"] = 0
     download_progress["speed_unit"] = "MB"
+    download_progress["model_type"] = ""
+    download_progress["model_name"] = ""
 
 def get_download_progress() -> Dict[str, Any]:
     """获取下载进度"""

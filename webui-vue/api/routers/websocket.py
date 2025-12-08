@@ -767,7 +767,9 @@ def get_download_status() -> Dict[str, Any]:
             "downloaded_size_gb": dp.get("downloaded_gb", 0),
             "total_size_gb": dp.get("total_gb", 32),
             "speed": dp.get("speed", 0),
-            "speed_unit": dp.get("speed_unit", "MB")
+            "speed_unit": dp.get("speed_unit", "MB"),
+            "model_type": dp.get("model_type", ""),
+            "model_name": dp.get("model_name", "")
         }
     elif return_code == 0:
         state.download_process = None

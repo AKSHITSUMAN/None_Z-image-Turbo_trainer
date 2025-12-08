@@ -249,7 +249,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useSystemStore } from '@/stores/system'
 import { useWebSocketStore } from '@/stores/websocket'
 import { 
@@ -289,8 +289,10 @@ const currentModelName = computed(() => {
 })
 
 const startingDownload = ref(false)
-const downloadingModelName = ref('')  // 当前正在下载的模型名称
-const downloadingModelType = ref('')  // 当前正在下载的模型类型
+
+// 从后端状态获取正在下载的模型信息
+const downloadingModelName = computed(() => downloadStatus.value.model_name || '')
+const downloadingModelType = computed(() => downloadStatus.value.model_type || '')
 
 const systemInfo = computed(() => systemStore.systemInfo)
 const wsConnected = computed(() => wsStore.isConnected)
@@ -386,27 +388,14 @@ async function refreshModelStatus(modelType?: string) {
 async function startDownload() {
   startingDownload.value = true
   try {
-    // 保存正在下载的模型信息
-    downloadingModelName.value = currentModelName.value
-    downloadingModelType.value = selectedModelType.value
     const res = await axios.post(`/api/system/download-model?model_type=${selectedModelType.value}`)
     ElMessage.success(`${currentModelName.value} 下载任务已启动`)
   } catch (e: any) {
     ElMessage.error('启动下载失败: ' + (e.response?.data?.detail || e.message))
-    downloadingModelName.value = ''
-    downloadingModelType.value = ''
   } finally {
     startingDownload.value = false
   }
 }
-
-// 监听下载状态，完成时清空正在下载的模型信息
-watch(isDownloading, (downloading, wasDownloading) => {
-  if (wasDownloading && !downloading) {
-    downloadingModelName.value = ''
-    downloadingModelType.value = ''
-  }
-})
 
 function copyEmail(email: string) {
   navigator.clipboard.writeText(email)

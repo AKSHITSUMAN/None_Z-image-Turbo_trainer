@@ -48,6 +48,8 @@ export interface DownloadStatus {
   total_size_gb?: number
   speed?: number
   speed_unit?: string
+  model_type?: string   // 正在下载的模型类型
+  model_name?: string   // 正在下载的模型名称
   currentFile?: string
 }
 

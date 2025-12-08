@@ -62,28 +62,36 @@ MODEL_SPECS = {
         "path_env": "LONGCAT_MODEL_PATH",
         "default_path": "longcat_models",  # 默认下载目录
         "expected_files": {
+            "model_index.json": {"required": True, "min_size": 100},
             "transformer": {
                 "required": True,
                 "files": {
                     "config.json": {"min_size": 100},
+                    # LongCat transformer 约 24GB，检查 index 文件存在
+                    "diffusion_pytorch_model.safetensors.index.json": {"min_size": 500},
                 }
             },
             "vae": {
                 "required": True,
                 "files": {
                     "config.json": {"min_size": 100},
+                    # VAE 约 335MB
+                    "diffusion_pytorch_model.safetensors": {"min_size": 100 * 1024 * 1024},
                 }
             },
             "text_encoder": {
                 "required": True,
                 "files": {
                     "config.json": {"min_size": 100},
+                    # Text encoder 约 9.4GB，检查 index 文件
+                    "model.safetensors.index.json": {"min_size": 500},
                 }
             },
             "tokenizer": {
                 "required": True,
                 "files": {
-                    "tokenizer.json": {"min_size": 1000},
+                    "tokenizer.json": {"min_size": 100000},  # 约 2.7MB
+                    "tokenizer_config.json": {"min_size": 100},
                 }
             },
             "scheduler": {
@@ -693,6 +701,13 @@ async def download_model(model_type: str = "zimage"):
         state.add_log(f"开始下载 {spec['name']} 模型...", "info")
         state.add_log(f"ModelScope ID: {model_id}", "info")
         state.add_log(f"下载目录: {model_path}", "info")
+        
+        # 保存正在下载的模型信息
+        state.update_download_progress(
+            model_type=model_type,
+            model_name=spec['name'],
+            total_gb=35 if model_type == "longcat" else 32
+        )
         
         # Start download in background
         state.download_process = subprocess.Popen(
