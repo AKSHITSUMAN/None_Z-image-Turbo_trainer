@@ -200,21 +200,22 @@
           <span>检测中...</span>
         </div>
 
+        <!-- 下载按钮：完全缺失或部分缺失时显示 -->
         <el-button 
-          v-if="!currentModelStatus.exists && !isDownloading" 
+          v-if="needsDownload && !isDownloading" 
           type="primary" 
           @click="startDownload" 
           :loading="startingDownload"
           class="download-btn"
         >
           <el-icon><Download /></el-icon>
-          下载 {{ currentModelName }} 模型
+          {{ downloadButtonText }}
         </el-button>
         
         <!-- 下载进度（总进度） -->
         <div v-if="isDownloading" class="download-progress-box">
           <div class="progress-header">
-            <span>正在下载 {{ currentModelName }}</span>
+            <span>正在下载 {{ downloadingModelName || currentModelName }}</span>
             <span class="progress-percent">{{ downloadProgress.toFixed(1) }}%</span>
           </div>
           <el-progress 
@@ -248,7 +249,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useSystemStore } from '@/stores/system'
 import { useWebSocketStore } from '@/stores/websocket'
 import { 
@@ -288,6 +289,7 @@ const currentModelName = computed(() => {
 })
 
 const startingDownload = ref(false)
+const downloadingModelName = ref('')  // 当前正在下载的模型名称
 
 const systemInfo = computed(() => systemStore.systemInfo)
 const wsConnected = computed(() => wsStore.isConnected)
@@ -309,6 +311,31 @@ const downloadSpeed = computed(() => {
   const speed = downloadStatus.value.speed || 0
   const unit = downloadStatus.value.speed_unit || 'MB'
   return speed > 0 ? `${speed.toFixed(1)} ${unit}/s` : '计算中...'
+})
+
+// 是否需要下载（完全缺失或部分缺失）
+const needsDownload = computed(() => {
+  const status = currentModelStatus.value
+  if (!status.summary) return !status.exists
+  
+  // 有缺失的组件就需要下载
+  const { valid_components, total_components } = status.summary
+  return valid_components < total_components
+})
+
+// 下载按钮文字
+const downloadButtonText = computed(() => {
+  const status = currentModelStatus.value
+  if (!status.summary || !status.exists) {
+    return `下载 ${currentModelName.value} 模型`
+  }
+  
+  const { missing_components } = status.summary
+  if (missing_components && missing_components.length > 0) {
+    return `补充下载 (${missing_components.length} 个组件缺失)`
+  }
+  
+  return `下载 ${currentModelName.value} 模型`
 })
 
 
@@ -358,14 +385,24 @@ async function refreshModelStatus(modelType?: string) {
 async function startDownload() {
   startingDownload.value = true
   try {
+    // 保存正在下载的模型名称
+    downloadingModelName.value = currentModelName.value
     const res = await axios.post(`/api/system/download-model?model_type=${selectedModelType.value}`)
     ElMessage.success(`${currentModelName.value} 下载任务已启动`)
   } catch (e: any) {
     ElMessage.error('启动下载失败: ' + (e.response?.data?.detail || e.message))
+    downloadingModelName.value = ''
   } finally {
     startingDownload.value = false
   }
 }
+
+// 监听下载状态，完成时清空正在下载的模型名称
+watch(isDownloading, (downloading, wasDownloading) => {
+  if (wasDownloading && !downloading) {
+    downloadingModelName.value = ''
+  }
+})
 
 function copyEmail(email: string) {
   navigator.clipboard.writeText(email)
