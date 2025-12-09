@@ -127,17 +127,15 @@ batch_size = 1
 
 # 是否打乱数据
 shuffle = true
+num_workers = 4
 
-# 是否启用分桶
-enable_bucket = true
-
-# 文本编码最大序列长度 (需与缓存时一致)
-# 推荐: 512 (默认), 256 (节省显存/加速), 1024 (长文本描述)
+# 文本编码最大序列长度
 max_sequence_length = 512
 
-# --- 数据集列表 ---
-# 支持多个 [[dataset.sources]] 块，用于混合训练
+# 缓存架构标识 (zi: Z-Image)
+cache_arch = "zi"
 
+# --- 数据集列表 ---
 [[dataset.sources]]
 # 缓存目录路径
 cache_directory = "/root/autodl-tmp/zimage-trainer/datasets/size_1024/size_1024"

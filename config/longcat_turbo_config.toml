@@ -87,6 +87,9 @@ enable_bucket = true
 # LongCat 支持更长序列, 推荐: 512 (默认), 1024 (长描述)
 max_sequence_length = 512
 
+# 缓存架构标识 (lc: LongCat-Image)
+cache_arch = "lc"
+
 [[dataset.sources]]
 cache_directory = "/path/to/your/dataset/cache"
 num_repeats = 10

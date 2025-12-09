@@ -33,20 +33,23 @@ class ZImageLatentDataset(Dataset):
     Supports multiple datasets and per-dataset resolution filtering.
     """
     
-    LATENT_ARCH = "zi"
-    TE_SUFFIX = "_zi_te.safetensors"
-    
     def __init__(
         self,
         datasets: List[Dict],
         shuffle: bool = True,
         max_sequence_length: int = 512,
+        cache_arch: str = "zi",  # 'zi' (Z-Image) or 'lc' (LongCat)
     ):
         super().__init__()
         
         self.datasets = datasets
         self.shuffle = shuffle
         self.max_sequence_length = max_sequence_length
+        self.cache_arch = cache_arch
+        
+        # Determine suffixes based on architecture
+        self.latent_pattern = f"*_{cache_arch}.safetensors"
+        self.te_suffix = f"_{cache_arch}_te.safetensors"
         
         self.cache_files = []
         self.resolutions = []
@@ -79,8 +82,7 @@ class ZImageLatentDataset(Dataset):
         resolutions = []
         
         # Find all latent files
-        pattern = f"*_{self.LATENT_ARCH}.safetensors"
-        latent_files = list(cache_dir.glob(pattern))
+        latent_files = list(cache_dir.glob(self.latent_pattern))
         
         for latent_path in latent_files:
             # Parse resolution
@@ -313,10 +315,14 @@ def create_dataloader(args) -> DataLoader:
     else:
         enable_bucket = config.get('enable_bucket', getattr(args, 'enable_bucket', True))
     
+    # 读取 Architecture 标识 (区分 zi/lc 缓存)
+    cache_arch = config.get('cache_arch', getattr(args, 'cache_arch', 'zi'))
+    
     # 创建 dataset
     dataset = ZImageLatentDataset(
         datasets=datasets,
         max_sequence_length=max_sequence_length,
+        cache_arch=cache_arch,
     )
     
     if enable_bucket:

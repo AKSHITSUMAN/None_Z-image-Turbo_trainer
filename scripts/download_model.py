@@ -51,6 +51,9 @@ def get_dir_size_gb(path: Path) -> float:
     total = 0
     try:
         for f in path.rglob("*"):
+            # 忽略隐藏文件和目录 (如 ._____temp)
+            if any(part.startswith('.') for part in f.parts):
+                continue
             if f.is_file():
                 total += f.stat().st_size
     except Exception:
@@ -146,8 +149,22 @@ def main():
     else:
         model_id = MODEL_MAP["zimage"]
     
-    # 获取预估大小
-    expected_size = MODEL_SIZES.get(model_id, 30.0)
+    # 获取预估大小 (动态计算)
+    try:
+        from modelscope.hub.api import HubApi
+        api = HubApi()
+        remote_files = api.get_model_files(model_id, recursive=True)
+        total_size = 0
+        for rf in remote_files:
+            # 过滤逻辑保持一致
+            if rf.get('Type') == 'tree': continue
+            name = rf.get('Path') or rf.get('Name', '')
+            if not name or name.endswith('/'): continue
+            if 'readme' in name.lower() or name.endswith('.md'): continue
+            total_size += rf.get('Size', 0)
+        expected_size = total_size / (1024**3)
+    except Exception:
+        expected_size = MODEL_SIZES.get(model_id, 30.0)
     
     print("=" * 60)
     print(f"Model ID: {model_id}")
@@ -201,9 +218,24 @@ def main():
             for rf in remote_files:
                 file_path = rf.get('Path') or rf.get('Name', '')
                 file_size = rf.get('Size', 0)
+                file_type = rf.get('Type', '')
                 
-                if not file_path or file_path.endswith('/'):
-                    continue  # 跳过目录
+                # 过滤目录 (Type='tree' 或以 / 结尾)
+                if file_type == 'tree' or not file_path or file_path.endswith('/'):
+                    continue
+                
+                # 过滤 .gitattributes 和 .gitignore 文件
+                if file_path.endswith(".gitattributes") or file_path.endswith(".gitignore"):
+                    continue
+
+                # 强力过滤: 如果 size 为 0 且没有后缀名，极大概率是目录
+                if file_size == 0 and '.' not in file_path.split('/')[-1]:
+                    continue
+
+                # 过滤 README 和 git 文件
+                path_lower = file_path.lower()
+                if 'readme' in path_lower or path_lower.endswith('.md') or '.git' in path_lower:
+                    continue
                     
                 local_file = model_dir / file_path
                 if not local_file.exists():

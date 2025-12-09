@@ -10,7 +10,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from core.config import get_model_path
 from src.models.model_detector import (
-    create_model_detector, auto_detect_model, check_model_integrity,
+    create_model_detector,
     ModelStatus, ZImageDetector, LongCatDetector
 )
 from src.models.model_downloader import (
@@ -72,8 +72,9 @@ async def auto_detect_model_type(path: Optional[str] = None):
                     "error": "未找到模型路径"
                 }
         
-        # 自动检测模型类型
-        detected_type = auto_detect_model(model_path)
+        # 自动检测模型类型 (使用 Registry)
+        from src.models.model_detector import ModelDetectorRegistry
+        detected_type = ModelDetectorRegistry.auto_detect(model_path)
         
         if detected_type:
             # 获取详细信息
