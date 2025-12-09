@@ -27,6 +27,9 @@ from accelerate.utils import set_seed
 
 # 显存优化
 from zimage_trainer.utils.memory_optimizer import MemoryOptimizer
+from zimage_trainer.utils.snr_utils import compute_snr_weights
+from zimage_trainer.losses import FrequencyAwareLoss, LatentStyleStructureLoss
+import torch.nn.functional as F
 
 import logging
 logging.basicConfig(
@@ -90,6 +93,24 @@ def parse_args():
     # Min-SNR 加权参数
     parser.add_argument("--snr_gamma", type=float, default=5.0, help="Min-SNR gamma (0=禁用)")
     parser.add_argument("--snr_floor", type=float, default=0.1, help="Min-SNR 保底权重")
+    
+    # 损失模式参数
+    parser.add_argument("--loss_mode", type=str, default="standard",
+        choices=["standard", "frequency", "style", "unified"],
+        help="损失模式: standard=MSE+Cosine, frequency=频域感知, style=风格结构, unified=统一模式")
+    parser.add_argument("--lambda_cosine", type=float, default=0.1, help="Cosine Loss 权重")
+    
+    # 频域感知 Loss 参数 (loss_mode=frequency 或 unified)
+    parser.add_argument("--alpha_hf", type=float, default=1.0, help="高频增强权重")
+    parser.add_argument("--beta_lf", type=float, default=0.2, help="低频锁定权重")
+    parser.add_argument("--lf_magnitude_weight", type=float, default=0.0, help="低频幅度约束")
+    parser.add_argument("--downsample_factor", type=int, default=4, help="低频提取降采样因子")
+    
+    # 风格结构 Loss 参数 (loss_mode=style 或 unified)
+    parser.add_argument("--lambda_struct", type=float, default=1.0, help="结构锁权重")
+    parser.add_argument("--lambda_light", type=float, default=0.5, help="光影学习权重")
+    parser.add_argument("--lambda_color", type=float, default=0.3, help="色调迁移权重")
+    parser.add_argument("--lambda_tex", type=float, default=0.5, help="质感增强权重")
     
     # 训练控制
     parser.add_argument("--num_train_epochs", type=int, default=10, help="训练 Epoch 数")
@@ -541,7 +562,34 @@ def main():
         transformer, optimizer, dataloader, lr_scheduler
     )
     
-    # 8. 训练循环
+    # 8. 初始化损失函数
+    loss_mode = args.loss_mode
+    logger.info(f"\n[LOSS] 损失模式: {loss_mode}")
+    
+    frequency_loss_fn = None
+    style_loss_fn = None
+    
+    if loss_mode in ['frequency', 'unified']:
+        frequency_loss_fn = FrequencyAwareLoss(
+            alpha_hf=args.alpha_hf,
+            beta_lf=args.beta_lf,
+            base_weight=1.0,
+            lf_magnitude_weight=args.lf_magnitude_weight,
+            downsample_factor=args.downsample_factor,
+        )
+        logger.info(f"  频域感知 Loss: alpha_hf={args.alpha_hf}, beta_lf={args.beta_lf}")
+    
+    if loss_mode in ['style', 'unified']:
+        style_loss_fn = LatentStyleStructureLoss(
+            lambda_base=1.0,
+            lambda_struct=args.lambda_struct,
+            lambda_light=args.lambda_light,
+            lambda_color=args.lambda_color,
+            lambda_tex=args.lambda_tex,
+        )
+        logger.info(f"  风格结构 Loss: struct={args.lambda_struct}, light={args.lambda_light}")
+    
+    # 9. 训练循环
     logger.info("\n" + "="*60)
     logger.info("[TARGET] 开始训练")
     logger.info("="*60)
@@ -625,15 +673,90 @@ def main():
                 # 统一精度（模型可能输出 float32）
                 model_pred = model_pred.to(dtype=weight_dtype)
                 
-                # 计算损失 (velocity prediction)
-                loss = torch.nn.functional.mse_loss(model_pred, target_velocity)
+                # 计算损失
+                loss_components = {}
                 
-                # 应用 SNR 加权
+                # 计算 Min-SNR 权重
                 if args.snr_gamma > 0:
-                    snr = (1 - sigmas) ** 2 / (sigmas ** 2 + 1e-8)
-                    snr_weights = torch.clamp(snr / args.snr_gamma, max=1.0)
-                    snr_weights = torch.clamp(snr_weights, min=args.snr_floor)
-                    loss = loss * snr_weights.mean()
+                    snr_weights = compute_snr_weights(
+                        timesteps=timesteps,
+                        num_train_timesteps=1000,
+                        snr_gamma=args.snr_gamma,
+                        snr_floor=args.snr_floor,
+                        prediction_type="v_prediction",
+                    ).to(model_pred.device, dtype=torch.float32)
+                else:
+                    snr_weights = None
+                
+                if loss_mode == 'standard':
+                    # 标准模式：MSE + Cosine
+                    loss_mse = F.mse_loss(model_pred, target_velocity)
+                    
+                    # Cosine 方向损失
+                    pred_flat = model_pred.view(model_pred.shape[0], -1)
+                    target_flat = target_velocity.view(target_velocity.shape[0], -1)
+                    cos_sim = F.cosine_similarity(pred_flat, target_flat, dim=1).mean()
+                    loss_cosine = 1.0 - cos_sim
+                    
+                    loss = loss_mse + args.lambda_cosine * loss_cosine
+                    
+                    # 应用 SNR 加权
+                    if snr_weights is not None:
+                        loss = loss * snr_weights.mean()
+                    
+                    loss_components['mse'] = loss_mse.item()
+                    loss_components['cosine'] = loss_cosine.item()
+                    
+                elif loss_mode == 'frequency':
+                    # 频域感知模式
+                    loss, comps = frequency_loss_fn(
+                        pred_v=model_pred,
+                        target_v=target_velocity,
+                        noisy_latents=noisy_latents,
+                        timesteps=timesteps,
+                        num_train_timesteps=1000,
+                        return_components=True,
+                    )
+                    if snr_weights is not None:
+                        loss = loss * snr_weights.mean()
+                    loss_components = {k: v.item() for k, v in comps.items()}
+                    
+                elif loss_mode == 'style':
+                    # 风格结构模式
+                    loss, comps = style_loss_fn(
+                        pred_v=model_pred,
+                        target_v=target_velocity,
+                        noisy_latents=noisy_latents,
+                        timesteps=timesteps,
+                        num_train_timesteps=1000,
+                        return_components=True,
+                    )
+                    if snr_weights is not None:
+                        loss = loss * snr_weights.mean()
+                    loss_components = {k: v.item() for k, v in comps.items()}
+                    
+                elif loss_mode == 'unified':
+                    # 统一模式：组合频域和风格损失
+                    freq_loss, freq_comps = frequency_loss_fn(
+                        pred_v=model_pred,
+                        target_v=target_velocity,
+                        noisy_latents=noisy_latents,
+                        timesteps=timesteps,
+                        num_train_timesteps=1000,
+                        return_components=True,
+                    )
+                    style_loss, style_comps = style_loss_fn(
+                        pred_v=model_pred,
+                        target_v=target_velocity,
+                        noisy_latents=noisy_latents,
+                        timesteps=timesteps,
+                        num_train_timesteps=1000,
+                        return_components=True,
+                    )
+                    loss = (freq_loss + style_loss) / 2
+                    if snr_weights is not None:
+                        loss = loss * snr_weights.mean()
+                    loss_components = {'freq': freq_loss.item(), 'style': style_loss.item()}
                 
                 # 反向传播
                 accelerator.backward(loss)
@@ -655,7 +778,22 @@ def main():
                     ema_loss = ema_decay * ema_loss + (1 - ema_decay) * current_loss
                 
                 current_lr = lr_scheduler.get_last_lr()[0]
-                print(f"[STEP] {global_step}/{max_train_steps} epoch={epoch+1}/{args.num_train_epochs} loss={current_loss:.4f} ema_loss={ema_loss:.4f} lr={current_lr:.2e}", flush=True)
+                
+                # 根据损失模式输出不同信息
+                if loss_mode == 'standard':
+                    print(f"[STEP] {global_step}/{max_train_steps} epoch={epoch+1}/{args.num_train_epochs} loss={current_loss:.4f} ema={ema_loss:.4f} mse={loss_components.get('mse', 0):.4f} cos={loss_components.get('cosine', 0):.4f} lr={current_lr:.2e}", flush=True)
+                elif loss_mode == 'frequency':
+                    hf = loss_components.get('loss_hf', 0)
+                    lf = loss_components.get('loss_lf', 0)
+                    print(f"[STEP] {global_step}/{max_train_steps} epoch={epoch+1}/{args.num_train_epochs} loss={current_loss:.4f} ema={ema_loss:.4f} hf={hf:.4f} lf={lf:.4f} lr={current_lr:.2e}", flush=True)
+                elif loss_mode == 'style':
+                    struct = loss_components.get('loss_struct', 0)
+                    light = loss_components.get('loss_light', 0)
+                    print(f"[STEP] {global_step}/{max_train_steps} epoch={epoch+1}/{args.num_train_epochs} loss={current_loss:.4f} ema={ema_loss:.4f} struct={struct:.4f} light={light:.4f} lr={current_lr:.2e}", flush=True)
+                elif loss_mode == 'unified':
+                    freq = loss_components.get('freq', 0)
+                    style = loss_components.get('style', 0)
+                    print(f"[STEP] {global_step}/{max_train_steps} epoch={epoch+1}/{args.num_train_epochs} loss={current_loss:.4f} ema={ema_loss:.4f} freq={freq:.4f} style={style:.4f} lr={current_lr:.2e}", flush=True)
             
             # 执行内存优化 (清理缓存等)
             memory_optimizer.optimize_training_step()
