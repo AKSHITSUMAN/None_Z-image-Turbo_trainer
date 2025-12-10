@@ -64,6 +64,9 @@
       <div class="preview-header">
         <h3>训练配置预览</h3>
         <span class="config-name-badge">{{ currentConfig.name }}</span>
+        <span class="model-type-badge" :class="currentConfig.model_type || 'zimage'">
+          {{ getModelTypeLabel(currentConfig.model_type) }}
+        </span>
         <span class="edit-link" @click="goToEditConfig">
           <el-icon><Edit /></el-icon>
           编辑
@@ -156,42 +159,45 @@
             <span class="label">Lambda Cosine</span>
             <span class="value">{{ currentConfig.training?.lambda_cosine ?? 0.1 }}</span>
           </div>
-          <div class="preview-item" v-if="currentConfig.training?.loss_mode === 'mixed'">
+          <div class="preview-item" v-if="currentConfig.training?.enable_freq">
             <span class="label">Lambda Freq</span>
-            <span class="value">{{ currentConfig.training?.lambda_freq ?? 0 }}</span>
+            <span class="value">{{ currentConfig.training?.lambda_freq ?? 0.3 }}</span>
           </div>
-          <div class="preview-item" v-if="currentConfig.training?.loss_mode === 'mixed'">
+          <div class="preview-item" v-if="currentConfig.training?.enable_style">
             <span class="label">Lambda Style</span>
-            <span class="value">{{ currentConfig.training?.lambda_style ?? 0 }}</span>
+            <span class="value">{{ currentConfig.training?.lambda_style ?? 0.3 }}</span>
           </div>
           <div class="preview-item">
             <span class="label">损失模式</span>
-            <span class="value highlight">{{ getLossModeLabel(currentConfig.training?.loss_mode) }}</span>
+            <span class="value highlight">{{ getEnabledLossLabel(currentConfig.training) }}</span>
           </div>
         </div>
-        <!-- Mixed 模式参数 -->
-        <div class="preview-grid-3" v-if="currentConfig.training?.loss_mode === 'mixed'">
-          <div class="preview-item" v-if="currentConfig.training?.lambda_freq > 0">
+        <!-- 频域感知损失参数 -->
+        <div class="preview-grid-3" v-if="currentConfig.training?.enable_freq">
+          <div class="preview-item">
             <span class="label">Alpha HF (高频)</span>
             <span class="value">{{ currentConfig.training?.alpha_hf ?? 1.0 }}</span>
           </div>
-          <div class="preview-item" v-if="currentConfig.training?.lambda_freq > 0">
+          <div class="preview-item">
             <span class="label">Beta LF (低频)</span>
             <span class="value">{{ currentConfig.training?.beta_lf ?? 0.2 }}</span>
           </div>
-          <div class="preview-item" v-if="currentConfig.training?.lambda_style > 0">
+        </div>
+        <!-- 风格结构损失参数 -->
+        <div class="preview-grid-3" v-if="currentConfig.training?.enable_style">
+          <div class="preview-item">
             <span class="label">λ Struct (结构)</span>
             <span class="value">{{ currentConfig.training?.lambda_struct ?? 1.0 }}</span>
           </div>
-          <div class="preview-item" v-if="currentConfig.training?.lambda_style > 0">
+          <div class="preview-item">
             <span class="label">λ Light (光影)</span>
             <span class="value">{{ currentConfig.training?.lambda_light ?? 0.5 }}</span>
           </div>
-          <div class="preview-item" v-if="currentConfig.training?.lambda_style > 0">
+          <div class="preview-item">
             <span class="label">λ Color (色调)</span>
             <span class="value">{{ currentConfig.training?.lambda_color ?? 0.3 }}</span>
           </div>
-          <div class="preview-item" v-if="currentConfig.training?.lambda_style > 0">
+          <div class="preview-item">
             <span class="label">λ Tex (质感)</span>
             <span class="value">{{ currentConfig.training?.lambda_tex ?? 0.5 }}</span>
           </div>
@@ -383,14 +389,21 @@ function getDatasetName(path: string): string {
   return parts[parts.length - 1] || parts[parts.length - 2] || path
 }
 
-function getLossModeLabel(mode: string | undefined): string {
+function getModelTypeLabel(type: string | undefined): string {
   const labels: Record<string, string> = {
-    'standard': 'Standard (基础)',
-    'frequency': 'Frequency (频域感知)',
-    'style': 'Style (风格结构)',
-    'unified': 'Unified (统一模式)'
+    'zimage': '⚡ Z-Image',
+    'longcat': '🐱 LongCat'
   }
-  return labels[mode || 'standard'] || 'Standard (基础)'
+  return labels[type || 'zimage'] || '⚡ Z-Image'
+}
+
+function getEnabledLossLabel(training: any): string {
+  if (!training) return 'L1 + Cosine'
+  const parts = ['L1']
+  if (training.lambda_cosine > 0) parts.push('Cosine')
+  if (training.enable_freq) parts.push('Freq')
+  if (training.enable_style) parts.push('Style')
+  return parts.join(' + ')
 }
 
 function formatTime(seconds: number): string {
@@ -862,6 +875,23 @@ onUnmounted(() => {
       border-radius: var(--radius-sm);
       font-size: 0.8rem;
       font-weight: 600;
+    }
+    
+    .model-type-badge {
+      padding: 2px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      
+      &.zimage {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+      }
+      
+      &.longcat {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        color: white;
+      }
     }
     
     .edit-link {

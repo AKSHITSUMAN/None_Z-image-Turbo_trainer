@@ -72,13 +72,13 @@ def parse_args():
     
     # Training
     parser.add_argument("--output_dir", type=str, default="output")
-    parser.add_argument("--output_name", type=str, default="zimage_lora")
+    parser.add_argument("--output_name", type=str, default=None)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--num_train_epochs", type=int, default=10)
-    parser.add_argument("--learning_rate", type=float, default=1e-4)
+    parser.add_argument("--num_train_epochs", type=int, default=None)
+    parser.add_argument("--learning_rate", type=float, default=None)
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
     parser.add_argument("--max_grad_norm", type=float, default=1.0)
-    parser.add_argument("--save_every_n_epochs", type=int, default=1)
+    parser.add_argument("--save_every_n_epochs", type=int, default=None)
     parser.add_argument("--gradient_checkpointing", type=bool, default=True)
     
     # LoRA
@@ -106,9 +106,23 @@ def parse_args():
     parser.add_argument("--lambda_style", type=float, default=0.3)
     parser.add_argument("--lambda_struct", type=float, default=1.0)
     
+    # Style-structure sub-params
+    parser.add_argument("--lambda_light", type=float, default=0.5)
+    parser.add_argument("--lambda_color", type=float, default=0.3)
+    parser.add_argument("--lambda_tex", type=float, default=0.5)
+    
     # Memory optimization
     parser.add_argument("--blocks_to_swap", type=int, default=0)
     parser.add_argument("--block_swap_enabled", type=bool, default=False)
+    
+    # Turbo / RAFT mode
+    parser.add_argument("--enable_turbo", type=bool, default=True)
+    parser.add_argument("--raft_mode", type=bool, default=False)
+    parser.add_argument("--free_stream_ratio", type=float, default=0.3)
+    
+    # Optimizer
+    parser.add_argument("--optimizer_type", type=str, default="AdamW8bit")
+    parser.add_argument("--weight_decay", type=float, default=0.0)
     
     # Scheduler
     parser.add_argument("--lr_scheduler", type=str, default="cosine_with_restarts")
@@ -135,13 +149,22 @@ def parse_args():
         args.output_dir = model_cfg.get("output_dir", args.output_dir)
         
         # Training
-        args.output_name = training_cfg.get("output_name", args.output_name)
-        args.num_train_epochs = training_cfg.get("num_train_epochs", 
-                                advanced_cfg.get("num_train_epochs", args.num_train_epochs))
-        args.learning_rate = training_cfg.get("learning_rate", args.learning_rate)
+        if args.output_name is None:
+            args.output_name = training_cfg.get("output_name", "zimage_lora")
+            
+        if args.num_train_epochs is None:
+            args.num_train_epochs = training_cfg.get("num_train_epochs", 
+                                    advanced_cfg.get("num_train_epochs", 10))
+                                    
+        if args.learning_rate is None:
+            args.learning_rate = training_cfg.get("learning_rate", 1e-4)
+
         args.gradient_accumulation_steps = training_cfg.get("gradient_accumulation_steps",
                                             advanced_cfg.get("gradient_accumulation_steps", args.gradient_accumulation_steps))
-        args.save_every_n_epochs = advanced_cfg.get("save_every_n_epochs", args.save_every_n_epochs)
+                                            
+        if args.save_every_n_epochs is None:
+            args.save_every_n_epochs = advanced_cfg.get("save_every_n_epochs", 1)
+            
         args.gradient_checkpointing = training_cfg.get("gradient_checkpointing",
                                         advanced_cfg.get("gradient_checkpointing", args.gradient_checkpointing))
         
@@ -169,10 +192,23 @@ def parse_args():
         args.enable_style = training_cfg.get("enable_style", args.enable_style)
         args.lambda_style = training_cfg.get("lambda_style", args.lambda_style)
         args.lambda_struct = training_cfg.get("lambda_struct", args.lambda_struct)
+        # Style-structure sub-params
+        args.lambda_light = training_cfg.get("lambda_light", args.lambda_light)
+        args.lambda_color = training_cfg.get("lambda_color", args.lambda_color)
+        args.lambda_tex = training_cfg.get("lambda_tex", args.lambda_tex)
         
         # Memory
         args.blocks_to_swap = advanced_cfg.get("blocks_to_swap", args.blocks_to_swap)
         args.block_swap_enabled = args.blocks_to_swap > 0
+        
+        # Turbo / RAFT mode
+        args.enable_turbo = acrf_cfg.get("enable_turbo", args.enable_turbo)
+        args.raft_mode = acrf_cfg.get("raft_mode", args.raft_mode)
+        args.free_stream_ratio = acrf_cfg.get("free_stream_ratio", args.free_stream_ratio)
+        
+        # Optimizer
+        args.optimizer_type = training_cfg.get("optimizer_type", args.optimizer_type)
+        args.weight_decay = training_cfg.get("weight_decay", args.weight_decay)
         
         # Scheduler
         args.lr_warmup_steps = training_cfg.get("lr_warmup_steps", args.lr_warmup_steps)
@@ -310,8 +346,11 @@ def main():
     if args.enable_style:
         style_loss_fn = LatentStyleStructureLoss(
             lambda_struct=args.lambda_struct,
+            lambda_light=args.lambda_light,
+            lambda_color=args.lambda_color,
+            lambda_tex=args.lambda_tex,
         )
-        logger.info(f"  [Style] Enabled lambda={args.lambda_style}, struct={args.lambda_struct}")
+        logger.info(f"  [Style] Enabled lambda={args.lambda_style}, struct={args.lambda_struct}, light={args.lambda_light}, color={args.lambda_color}, tex={args.lambda_tex}")
     
     # =========================================================================
     # 6. DataLoader
@@ -325,13 +364,25 @@ def main():
     # 7. Optimizer and Scheduler
     # =========================================================================
     logger.info("\n[OPT] Setting up optimizer...")
+    logger.info(f"  Type: {args.optimizer_type}, LR: {args.learning_rate}, Weight Decay: {args.weight_decay}")
     
-    try:
-        import bitsandbytes as bnb
-        optimizer = bnb.optim.AdamW8bit(trainable_params, lr=args.learning_rate)
-        logger.info("  Using AdamW8bit optimizer")
-    except ImportError:
-        optimizer = torch.optim.AdamW(trainable_params, lr=args.learning_rate)
+    if args.optimizer_type == "AdamW8bit":
+        try:
+            import bitsandbytes as bnb
+            optimizer = bnb.optim.AdamW8bit(trainable_params, lr=args.learning_rate, weight_decay=args.weight_decay)
+            logger.info("  Using AdamW8bit optimizer")
+        except ImportError:
+            optimizer = torch.optim.AdamW(trainable_params, lr=args.learning_rate, weight_decay=args.weight_decay)
+            logger.info("  [Fallback] bitsandbytes not found, using standard AdamW")
+    elif args.optimizer_type == "Adafactor":
+        from transformers.optimization import Adafactor
+        optimizer = Adafactor(
+            trainable_params, lr=args.learning_rate, weight_decay=args.weight_decay,
+            scale_parameter=False, relative_step=False
+        )
+        logger.info("  Using Adafactor optimizer")
+    else:  # AdamW
+        optimizer = torch.optim.AdamW(trainable_params, lr=args.learning_rate, weight_decay=args.weight_decay)
         logger.info("  Using standard AdamW optimizer")
     
     max_train_steps = len(dataloader) * args.num_train_epochs // args.gradient_accumulation_steps
