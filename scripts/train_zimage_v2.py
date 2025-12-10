@@ -220,6 +220,13 @@ def parse_args():
         args.raft_mode = acrf_cfg.get("raft_mode", args.raft_mode)
         args.free_stream_ratio = acrf_cfg.get("free_stream_ratio", args.free_stream_ratio)
         
+        # L2 Schedule
+        args.l2_schedule_mode = acrf_cfg.get("l2_schedule_mode", args.l2_schedule_mode)
+        args.l2_initial_ratio = acrf_cfg.get("l2_initial_ratio", args.l2_initial_ratio)
+        args.l2_final_ratio = acrf_cfg.get("l2_final_ratio", args.l2_final_ratio)
+        args.l2_milestones = acrf_cfg.get("l2_milestones", args.l2_milestones)
+        args.l2_include_anchor = acrf_cfg.get("l2_include_anchor", args.l2_include_anchor)
+        
         # Optimizer
         args.optimizer_type = training_cfg.get("optimizer_type", args.optimizer_type)
         args.weight_decay = training_cfg.get("weight_decay", args.weight_decay)

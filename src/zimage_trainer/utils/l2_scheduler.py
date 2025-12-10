@@ -141,9 +141,17 @@ def create_l2_scheduler_from_args(args) -> Optional[L2RatioScheduler]:
         return None
     
     # 获取调度参数
+    # 获取调度参数
     l2_schedule_mode = getattr(args, 'l2_schedule_mode', 'constant')
-    l2_initial_ratio = getattr(args, 'l2_initial_ratio', getattr(args, 'free_stream_ratio', 0.3))
-    l2_final_ratio = getattr(args, 'l2_final_ratio', l2_initial_ratio)
+    
+    # initial_ratio: 如果参数为 None，回退到 free_stream_ratio，再没有则 0.3
+    l2_initial_ratio = getattr(args, 'l2_initial_ratio', None)
+    if l2_initial_ratio is None:
+        l2_initial_ratio = getattr(args, 'free_stream_ratio', 0.3)
+        
+    l2_final_ratio = getattr(args, 'l2_final_ratio', None)
+    if l2_final_ratio is None:
+        l2_final_ratio = l2_initial_ratio
     num_epochs = getattr(args, 'num_train_epochs', 10)
     
     # 阶梯模式参数
