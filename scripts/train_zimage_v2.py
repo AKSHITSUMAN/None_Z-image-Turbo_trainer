@@ -529,8 +529,17 @@ def main():
                 # Cast loss to float32 for stable backward
                 loss = loss.float()
                 
-                # Backward pass
-                accelerator.backward(loss)
+                # Backward pass with error handling
+                try:
+                    accelerator.backward(loss)
+                except RuntimeError as e:
+                    logger.error(f"[BACKWARD ERROR] Step {global_step}, Loss={loss.item():.4f}")
+                    logger.error(f"  Components: {loss_components}")
+                    logger.error(f"  Error: {e}")
+                    # Check for OOM
+                    if "out of memory" in str(e).lower():
+                        logger.error("  [OOM] GPU out of memory. Try reducing batch_size or enabling blocks_to_swap.")
+                    raise
                 
                 # Memory optimization step
                 if memory_optimizer:
