@@ -812,12 +812,10 @@ def main():
                     free_pred = adapter.unpack_latents(free_output, free_pack_info)
                     free_pred = free_pred.to(dtype=weight_dtype)
                     
-                    # 自由流 L2 损失
+                    # 自由流 L2 损失 (不参与 SNR 加权!)
                     loss_free = F.mse_loss(free_pred, free_target)
-                    
-                    # RAFT 混合: loss_total = loss_anchor + ratio * loss_free
-                    loss = loss + free_stream_ratio * loss_free
-                    loss_components['L2'] = loss_free.item()
+                    l2_loss_val = loss_free.item()
+                    loss_components['L2'] = l2_loss_val
                 
                 elif lambda_mse > 0:
                     # 兼容旧版: 独立 L2 损失 (不参与梯度)
@@ -851,12 +849,29 @@ def main():
                         mse_pred = mse_pred.to(dtype=weight_dtype)
                     
                     loss_mse = F.mse_loss(mse_pred, mse_target)
-                    loss = loss + lambda_mse * loss_mse
-                    loss_components['mse'] = loss_mse.item()
+                    l2_loss_val = loss_mse.item()
+                    loss_components['mse'] = l2_loss_val
+                else:
+                    l2_loss_val = 0.0
+                    loss_free = None
+                    loss_mse = None
                 
-                # 应用 SNR 加权
+                # === SNR 加权策略 ===
+                # 只对锚点流损失 (L1+Cosine+Freq+Style) 应用 SNR 加权
+                # 自由流 L2 不加权，符合 Flow Matching 原则（全域均匀学习）
+                
                 if snr_weights is not None:
-                    loss = loss * snr_weights.mean()
+                    anchor_loss_weighted = loss * snr_weights.mean()
+                else:
+                    anchor_loss_weighted = loss
+                
+                # 自由流 L2 不加权，直接加到总损失
+                if raft_mode and free_stream_ratio > 0 and loss_free is not None:
+                    loss = anchor_loss_weighted + free_stream_ratio * loss_free
+                elif lambda_mse > 0 and loss_mse is not None:
+                    loss = anchor_loss_weighted + lambda_mse * loss_mse
+                else:
+                    loss = anchor_loss_weighted
                 
                 # 确保 Loss 为 Float32 (避免 Mixed Precision backward error)
                 if loss.dtype != torch.float32:

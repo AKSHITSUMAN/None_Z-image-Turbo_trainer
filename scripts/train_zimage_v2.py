@@ -566,22 +566,32 @@ def main():
                     # Z-Image output is negated (与锚点流一致)
                     free_pred = -free_pred
                     
-                    # 自由流 L2 损失
+                    # 自由流 L2 损失 (不参与 SNR 加权!)
                     l2_loss = F.mse_loss(free_pred, free_target)
-                    loss = loss + args.free_stream_ratio * l2_loss
                     l2_loss_val = l2_loss.item()
                 loss_components['L2'] = l2_loss_val
                 
-                # SNR weighting
+                # === SNR 加权策略 ===
+                # 只对锚点流损失 (L1+Cosine+Freq+Style) 应用 SNR 加权
+                # 自由流 L2 不加权，符合 Flow Matching 原则（全域均匀学习）
+                
                 snr_weights = compute_snr_weights(
-                    timesteps=timesteps,
+                    timesteps=timesteps,  # 锚点流的 timesteps
                     num_train_timesteps=1000,
                     snr_gamma=args.snr_gamma,
                     snr_floor=args.snr_floor,
                     prediction_type="v_prediction",
                 )
                 snr_weights = snr_weights.to(device=loss.device, dtype=weight_dtype)
-                loss = loss * snr_weights.mean()
+                
+                # 锚点流损失加权
+                anchor_loss_weighted = loss * snr_weights.mean()
+                
+                # 自由流 L2 不加权，直接加到总损失
+                if l2_loss_val > 0:
+                    loss = anchor_loss_weighted + args.free_stream_ratio * l2_loss
+                else:
+                    loss = anchor_loss_weighted
                 
                 # NaN check
                 if torch.isnan(loss) or torch.isinf(loss):
