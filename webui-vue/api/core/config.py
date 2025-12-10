@@ -80,7 +80,8 @@ def get_model_path(model_type: str, component: str = "base") -> Path:
 # ============================================================================
 # 其他路径
 # ============================================================================
-LORA_PATH = _resolve_path("LORA_PATH", "./output")
+# LORA_PATH 支持两个环境变量名：OUTPUT_PATH (优先) 或 LORA_PATH
+LORA_PATH = _resolve_path("OUTPUT_PATH", "") or _resolve_path("LORA_PATH", "./output")
 DATASETS_DIR = _resolve_path("DATASET_PATH", "./datasets")
 GENERATION_OUTPUT_PATH = _resolve_path("GENERATION_OUTPUT_PATH", "./outputs")  # 图片生成输出路径
 

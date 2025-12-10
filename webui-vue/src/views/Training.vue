@@ -78,6 +78,12 @@
         <h4>AC-RF 参数</h4>
         <div class="preview-grid-3">
           <div class="preview-item">
+            <span class="label">Turbo 模式</span>
+            <span class="value" :class="{ highlight: currentConfig.acrf?.enable_turbo !== false }">
+              {{ currentConfig.acrf?.enable_turbo !== false ? '✓ 开启' : '关闭' }}
+            </span>
+          </div>
+          <div class="preview-item">
             <span class="label">Turbo Steps</span>
             <span class="value">{{ currentConfig.acrf?.turbo_steps ?? 10 }}</span>
           </div>
@@ -96,6 +102,10 @@
           <div class="preview-item">
             <span class="label">SNR Floor</span>
             <span class="value">{{ currentConfig.acrf?.snr_floor ?? 0.1 }}</span>
+          </div>
+          <div class="preview-item" v-if="currentConfig.acrf?.latent_jitter_scale > 0">
+            <span class="label">Latent Jitter</span>
+            <span class="value">{{ currentConfig.acrf?.latent_jitter_scale }}</span>
           </div>
         </div>
       </div>
@@ -167,9 +177,13 @@
             <span class="label">Lambda Style</span>
             <span class="value">{{ currentConfig.training?.lambda_style ?? 0.3 }}</span>
           </div>
+          <div class="preview-item" v-if="currentConfig.acrf?.raft_mode">
+            <span class="label">L2 混合</span>
+            <span class="value highlight">✓ {{ (currentConfig.acrf?.free_stream_ratio ?? 0.3) * 100 }}%</span>
+          </div>
           <div class="preview-item">
-            <span class="label">损失模式</span>
-            <span class="value highlight">{{ getEnabledLossLabel(currentConfig.training) }}</span>
+            <span class="label">损失组合</span>
+            <span class="value highlight">{{ getEnabledLossLabel(currentConfig.training, currentConfig.acrf) }}</span>
           </div>
         </div>
         <!-- 频域感知损失参数 -->
@@ -397,12 +411,13 @@ function getModelTypeLabel(type: string | undefined): string {
   return labels[type || 'zimage'] || '⚡ Z-Image'
 }
 
-function getEnabledLossLabel(training: any): string {
+function getEnabledLossLabel(training: any, acrf?: any): string {
   if (!training) return 'L1 + Cosine'
   const parts = ['L1']
   if (training.lambda_cosine > 0) parts.push('Cosine')
   if (training.enable_freq) parts.push('Freq')
   if (training.enable_style) parts.push('Style')
+  if (acrf?.raft_mode) parts.push('L2')
   return parts.join(' + ')
 }
 
