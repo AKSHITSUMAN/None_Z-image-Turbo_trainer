@@ -322,20 +322,24 @@ def check_dataset_cache(config: Dict[str, Any], model_type: str = "zimage") -> D
         if not dataset_path.exists():
             continue
         
-        # 统计图片和缓存
-        for f in dataset_path.rglob("*"):
-            if f.is_file() and f.suffix.lower() in image_extensions:
-                total_images += 1
-                stem = f.stem
-                parent = f.parent
-                
-                # 检查 latent 缓存 (使用动态模式)
-                if list(parent.glob(f"{stem}{latent_pattern}")):
-                    latent_cached += 1
-                
-                # 检查 text 缓存 (使用动态后缀)
-                if list(parent.glob(f"{stem}{text_suffix}")):
-                    text_cached += 1
+        # 方法1: 统计源图片数量
+        source_images = list(dataset_path.rglob("*"))
+        source_images = [f for f in source_images if f.is_file() and f.suffix.lower() in image_extensions]
+        total_images += len(source_images)
+        
+        # 方法2: 直接统计缓存文件数量 (更可靠)
+        # Latent 缓存: *_*_zi.safetensors 或 *_*_lc.safetensors
+        latent_files = list(dataset_path.rglob(f"*{latent_pattern}"))
+        latent_cached += len(latent_files)
+        
+        # Text 缓存: *_zi_te.safetensors 或 *_lc_te.safetensors
+        text_files = list(dataset_path.rglob(f"*{text_suffix}"))
+        text_cached += len(text_files)
+    
+    # 如果没有源图片但有缓存，使用缓存数量作为基准
+    # (用户可能只复制了缓存文件)
+    if total_images == 0 and latent_cached > 0:
+        total_images = latent_cached
     
     has_cache = latent_cached > 0 and text_cached > 0
     
@@ -344,8 +348,9 @@ def check_dataset_cache(config: Dict[str, Any], model_type: str = "zimage") -> D
         "total_images": total_images,
         "latent_cached": latent_cached,
         "text_cached": text_cached,
-        "latent_missing": total_images - latent_cached,
-        "text_missing": total_images - text_cached
+        "latent_missing": max(0, total_images - latent_cached),
+        "text_missing": max(0, total_images - text_cached),
+        "model_type": model_type
     }
 
 

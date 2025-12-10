@@ -508,12 +508,17 @@ async function generateCacheAndStartTraining() {
       const vaePath = defaultsRes.data.vaePath
       const textEncoderPath = defaultsRes.data.textEncoderPath
       
+      // 获取当前配置的模型类型（关键：确保生成正确类型的缓存）
+      const modelType = currentConfig.value.model_type || 'zimage'
+      addLog(`模型类型: ${modelType}`, 'info')
+      
       await axios.post('/api/cache/generate', {
         datasetPath: datasetPath,
         generateLatent: true,
         generateText: true,
         vaePath: vaePath,
         textEncoderPath: textEncoderPath,
+        modelType: modelType,  // 传递模型类型，避免缓存类型错误
         resolution: ds.resolution_limit || 1024,
         batchSize: 1
       })
