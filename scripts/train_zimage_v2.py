@@ -131,6 +131,8 @@ def parse_args():
         help="L2 结束比例")
     parser.add_argument("--l2_milestones", type=str, default="",
         help="阶梯模式切换点 (epoch, 逗号分隔)")
+    parser.add_argument("--l2_include_anchor", type=bool, default=False,
+        help="L2 同时计算锚点时间步")
     
     # Optimizer
     parser.add_argument("--optimizer_type", type=str, default="AdamW8bit")
@@ -589,6 +591,15 @@ def main():
                     # 自由流 L2 损失 (不参与 SNR 加权!)
                     l2_loss = F.mse_loss(free_pred, free_target)
                     l2_loss_val = l2_loss.item()
+                    
+                    # 如果 l2_include_anchor=True，额外在锚点上计算 L2
+                    l2_include_anchor = getattr(args, 'l2_include_anchor', False)
+                    if l2_include_anchor:
+                        # 锚点 L2: 使用已有的 model_pred 和 target_velocity
+                        anchor_l2 = F.mse_loss(model_pred, target_velocity)
+                        l2_loss = l2_loss + anchor_l2
+                        l2_loss_val = l2_loss.item()
+                        
                 loss_components['L2'] = l2_loss_val
                 
                 # === SNR 加权策略 ===

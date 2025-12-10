@@ -509,8 +509,8 @@
                     <el-icon class="help-icon"><QuestionFilled /></el-icon>
                   </el-tooltip>
                 </span>
-                <el-slider v-model="config.acrf.l2_initial_ratio" :min="0.05" :max="0.6" :step="0.05" :show-tooltip="false" class="slider-flex" />
-                <el-input-number v-model="config.acrf.l2_initial_ratio" :min="0.05" :max="0.6" :step="0.05" controls-position="right" class="input-fixed" />
+                <el-slider v-model="config.acrf.l2_initial_ratio" :min="0.05" :max="1.0" :step="0.05" :show-tooltip="false" class="slider-flex" />
+                <el-input-number v-model="config.acrf.l2_initial_ratio" :min="0.05" :max="1.0" :step="0.05" controls-position="right" class="input-fixed" />
               </div>
               <div class="control-row" v-if="config.acrf.l2_schedule_mode !== 'constant'">
                 <span class="label">
@@ -519,8 +519,8 @@
                     <el-icon class="help-icon"><QuestionFilled /></el-icon>
                   </el-tooltip>
                 </span>
-                <el-slider v-model="config.acrf.l2_final_ratio" :min="0.05" :max="0.6" :step="0.05" :show-tooltip="false" class="slider-flex" />
-                <el-input-number v-model="config.acrf.l2_final_ratio" :min="0.05" :max="0.6" :step="0.05" controls-position="right" class="input-fixed" />
+                <el-slider v-model="config.acrf.l2_final_ratio" :min="0.05" :max="1.0" :step="0.05" :show-tooltip="false" class="slider-flex" />
+                <el-input-number v-model="config.acrf.l2_final_ratio" :min="0.05" :max="1.0" :step="0.05" controls-position="right" class="input-fixed" />
               </div>
               <div class="control-row" v-if="config.acrf.l2_schedule_mode === 'step'">
                 <span class="label">
@@ -530,6 +530,15 @@
                   </el-tooltip>
                 </span>
                 <el-input v-model="config.acrf.l2_milestones" placeholder="3,6" style="width: 120px" />
+              </div>
+              <div class="control-row">
+                <span class="label">
+                  L2 包含锚点
+                  <el-tooltip content="L2 损失同时计算锚点时间步，使 L2 覆盖全部时间步" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-switch v-model="config.acrf.l2_include_anchor" />
               </div>
             </template>
 
@@ -784,6 +793,7 @@ function getDefaultConfig() {
       l2_initial_ratio: 0.3,
       l2_final_ratio: 0.3,
       l2_milestones: '',
+      l2_include_anchor: false,
       // Latent Jitter (构图突破)
       latent_jitter_scale: 0.0
     },

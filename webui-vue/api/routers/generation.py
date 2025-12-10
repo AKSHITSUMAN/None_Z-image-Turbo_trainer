@@ -44,22 +44,67 @@ def load_pipeline_with_adapter(model_type: str):
     elif model_type == "longcat":
         try:
             from longcat_image.pipelines.pipeline_longcat_image import LongCatImagePipeline
+            from longcat_image.models.longcat_image_dit import LongCatImageTransformer2DModel
+            from transformers import AutoTokenizer, AutoModel, AutoProcessor, CLIPVisionModelWithProjection, CLIPImageProcessor
+            from diffusers import FlowMatchEulerDiscreteScheduler, AutoencoderKL
         except ImportError:
-             # Fallback or try adding path again if needed, though sys.path should be set
             sys.path.append(str(PROJECT_ROOT / "src"))
             from longcat_image.pipelines.pipeline_longcat_image import LongCatImagePipeline
+            from longcat_image.models.longcat_image_dit import LongCatImageTransformer2DModel
+            from transformers import AutoTokenizer, AutoModel, AutoProcessor, CLIPVisionModelWithProjection, CLIPImageProcessor
+            from diffusers import FlowMatchEulerDiscreteScheduler, AutoencoderKL
 
-        pipe = LongCatImagePipeline.from_pretrained(
-            str(model_path),
-            torch_dtype=dtype,
-            local_files_only=True,  # 强制使用本地模型
+        # 手动加载组件以确保完整性
+        # 1. Scheduler
+        scheduler = FlowMatchEulerDiscreteScheduler.from_pretrained(str(model_path), subfolder="scheduler")
+        
+        # 2. VAE
+        vae_path = get_model_path(model_type, "vae")
+        vae = AutoencoderKL.from_pretrained(str(vae_path), local_files_only=True).to(dtype=dtype)
+        
+        # 3. Transformer
+        desc_path = get_model_path(model_type, "transformer")
+        transformer = LongCatImageTransformer2DModel.from_pretrained(str(desc_path), local_files_only=True).to(dtype=dtype)
+        
+        # 4. Text Encoder & Processor
+        te_path = get_model_path(model_type, "text_encoder")
+        text_encoder = AutoModel.from_pretrained(str(te_path), local_files_only=True).to(dtype=dtype)
+        
+        # Tokenizer & Processor may be in 'tokenizer' subfolder or 'text_encoder'
+        tokenizer_path = model_path / "tokenizer"
+        if not tokenizer_path.exists():
+            tokenizer_path = te_path
+            
+        tokenizer = AutoTokenizer.from_pretrained(str(tokenizer_path), local_files_only=True)
+        text_processor = AutoProcessor.from_pretrained(str(tokenizer_path), local_files_only=True)
+        
+        # 5. Image Encoder (用于 IP-Adapter 等，通常在 image_encoder 目录，如果是可选的需处理)
+        # 注意: LongCatPipeline 似乎强制要求 image_encoder
+        try:
+            image_encoder_path = model_path / "image_encoder"
+            image_encoder = CLIPVisionModelWithProjection.from_pretrained(str(image_encoder_path), local_files_only=True).to(dtype=dtype)
+            feature_extractor = CLIPImageProcessor.from_pretrained(str(image_encoder_path), local_files_only=True)
+        except Exception:
+            # 如果不存在，尝试做一个 dummy 或者报错 (LongCat 似乎需要它)
+            # 暂时假设存在，如果不存在说明模型文件缺失
+            raise FileNotFoundError(f"Image Encoder not found in {model_path}/image_encoder. LongCat pipeline requires it.")
+
+        pipe = LongCatImagePipeline(
+            scheduler=scheduler,
+            vae=vae,
+            text_encoder=text_encoder,
+            tokenizer=tokenizer,
+            transformer=transformer,
+            text_processor=text_processor,
+            image_encoder=image_encoder,
+            feature_extractor=feature_extractor,
         )
     else:
         raise ValueError(f"Unsupported model type: {model_type}")
     
     if torch.cuda.is_available():
-        pipe.to("cuda")
-    pipe.enable_model_cpu_offload()
+        # LongCat is large, prefer cpu offload
+        pipe.enable_model_cpu_offload()
     
     return pipe
 
