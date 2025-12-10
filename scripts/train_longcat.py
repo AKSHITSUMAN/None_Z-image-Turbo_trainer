@@ -888,8 +888,8 @@ def main():
                 cosine = loss_components.get('cosine', 0)
                 freq = loss_components.get('freq', 0)
                 style = loss_components.get('style', 0)
-                free = loss_components.get('loss_free', 0)
-                print(f"[STEP] {global_step}/{max_train_steps} epoch={epoch+1}/{args.num_train_epochs} loss={current_loss:.4f} ema={ema_loss:.4f} l1={l1:.4f} cos={cosine:.4f} freq={freq:.4f} style={style:.4f} L2={free:.4f} lr={current_lr:.2e}", flush=True)
+                l2 = loss_components.get('L2', 0)
+                print(f"[STEP] {global_step}/{max_train_steps} epoch={epoch+1}/{args.num_train_epochs} loss={current_loss:.4f} ema={ema_loss:.4f} l1={l1:.4f} cos={cosine:.4f} freq={freq:.4f} style={style:.4f} L2={l2:.4f} lr={current_lr:.2e}", flush=True)
             
             # 执行内存优化 (清理缓存等)
             memory_optimizer.optimize_training_step()
