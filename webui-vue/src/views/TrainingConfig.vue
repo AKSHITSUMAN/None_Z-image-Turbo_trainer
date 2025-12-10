@@ -487,16 +487,51 @@
               </span>
               <el-switch v-model="config.acrf.raft_mode" />
             </div>
-            <div class="control-row" v-if="config.acrf.raft_mode">
-              <span class="label">
-                自由流比例
-                <el-tooltip content="全时间步L2随机采样的比例，推荐0.3 (30%)" placement="top">
-                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
-                </el-tooltip>
-              </span>
-              <el-slider v-model="config.acrf.free_stream_ratio" :min="0.1" :max="0.5" :step="0.05" :show-tooltip="false" class="slider-flex" />
-              <el-input-number v-model="config.acrf.free_stream_ratio" :min="0.1" :max="0.5" :step="0.05" controls-position="right" class="input-fixed" />
-            </div>
+            <template v-if="config.acrf.raft_mode">
+              <div class="control-row">
+                <span class="label">
+                  调度模式
+                  <el-tooltip content="L2 比例随训练进度变化的方式" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-select v-model="config.acrf.l2_schedule_mode" style="width: 160px">
+                  <el-option value="constant" label="固定值" />
+                  <el-option value="linear_increase" label="渐进增加 (适合蒸馏)" />
+                  <el-option value="linear_decrease" label="渐进减少 (适合Turbo)" />
+                  <el-option value="step" label="自定义阶梯" />
+                </el-select>
+              </div>
+              <div class="control-row">
+                <span class="label">
+                  起始比例
+                  <el-tooltip content="训练开始时的 L2 比例" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-slider v-model="config.acrf.l2_initial_ratio" :min="0.05" :max="0.6" :step="0.05" :show-tooltip="false" class="slider-flex" />
+                <el-input-number v-model="config.acrf.l2_initial_ratio" :min="0.05" :max="0.6" :step="0.05" controls-position="right" class="input-fixed" />
+              </div>
+              <div class="control-row" v-if="config.acrf.l2_schedule_mode !== 'constant'">
+                <span class="label">
+                  结束比例
+                  <el-tooltip content="训练结束时的 L2 比例" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-slider v-model="config.acrf.l2_final_ratio" :min="0.05" :max="0.6" :step="0.05" :show-tooltip="false" class="slider-flex" />
+                <el-input-number v-model="config.acrf.l2_final_ratio" :min="0.05" :max="0.6" :step="0.05" controls-position="right" class="input-fixed" />
+              </div>
+              <div class="control-row" v-if="config.acrf.l2_schedule_mode === 'step'">
+                <span class="label">
+                  阶梯切换 Epoch
+                  <el-tooltip content="在哪些 epoch 切换 L2 比例 (逗号分隔，如 3,6)" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-input v-model="config.acrf.l2_milestones" placeholder="3,6" style="width: 120px" />
+              </div>
+            </template>
 
             <div class="subsection-label">Latent Jitter（构图突破）</div>
             <div class="control-row">
@@ -744,6 +779,11 @@ function getDefaultConfig() {
       // MSE/L2 混合模式参数
       raft_mode: false,
       free_stream_ratio: 0.3,
+      // L2 调度参数
+      l2_schedule_mode: 'constant',
+      l2_initial_ratio: 0.3,
+      l2_final_ratio: 0.3,
+      l2_milestones: '',
       // Latent Jitter (构图突破)
       latent_jitter_scale: 0.0
     },

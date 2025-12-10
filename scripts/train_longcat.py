@@ -28,6 +28,7 @@ from accelerate.utils import set_seed
 # 显存优化
 from zimage_trainer.utils.memory_optimizer import MemoryOptimizer
 from zimage_trainer.utils.snr_utils import compute_snr_weights
+from zimage_trainer.utils.l2_scheduler import L2RatioScheduler, create_l2_scheduler_from_args
 from zimage_trainer.losses import FrequencyAwareLoss, LatentStyleStructureLoss
 import torch.nn.functional as F
 
@@ -113,6 +114,17 @@ def parse_args():
     # RAFT 混合模式参数 (同 batch 混合锚点流+自由流)
     parser.add_argument("--free_stream_ratio", type=float, default=0.3, help="自由流比例 (0.3=30%% 全时间步随机)")
     parser.add_argument("--raft_mode", action="store_true", help="启用 RAFT 同 batch 混合模式")
+    
+    # L2 Ratio Schedule
+    parser.add_argument("--l2_schedule_mode", type=str, default="constant",
+        choices=["constant", "linear_increase", "linear_decrease", "step"],
+        help="L2 ratio 调度模式")
+    parser.add_argument("--l2_initial_ratio", type=float, default=None,
+        help="L2 起始比例 (默认使用 free_stream_ratio)")
+    parser.add_argument("--l2_final_ratio", type=float, default=None,
+        help="L2 结束比例")
+    parser.add_argument("--l2_milestones", type=str, default="",
+        help="阶梯模式切换点 (epoch, 逗号分隔)")
     
     # Latent Jitter: 空间抠动 (垂直于流线方向，真正改变构图的关键)
     parser.add_argument("--latent_jitter_scale", type=float, default=0.0, help="Latent 空间抠动幅度 (0=禁用, 推荐 0.03-0.05)")
@@ -631,12 +643,20 @@ def main():
     logger.info("[TARGET] 开始训练")
     logger.info("="*60)
     
+    # 创建 L2 调度器
+    l2_scheduler = create_l2_scheduler_from_args(args)
+    if l2_scheduler:
+        logger.info(f"[L2 Schedule] {l2_scheduler.get_schedule_info()}")
+    
     global_step = 0
     ema_loss = None
     ema_decay = 0.99
     
     for epoch in range(args.num_train_epochs):
-        logger.info(f"\nEpoch {epoch + 1}/{args.num_train_epochs}")
+        # 获取当前 epoch 的 L2 ratio
+        current_l2_ratio = l2_scheduler.get_ratio(epoch + 1) if l2_scheduler else getattr(args, 'free_stream_ratio', 0.3)
+        
+        logger.info(f"\nEpoch {epoch + 1}/{args.num_train_epochs} [L2 ratio: {current_l2_ratio:.3f}]")
         transformer.train()
         
         for step, batch in enumerate(dataloader):
@@ -867,9 +887,9 @@ def main():
                 
                 # 自由流 L2 不加权，直接加到总损失
                 if raft_mode and free_stream_ratio > 0 and loss_free is not None:
-                    loss = anchor_loss_weighted + free_stream_ratio * loss_free
+                    loss = anchor_loss_weighted + current_l2_ratio * loss_free
                 elif lambda_mse > 0 and loss_mse is not None:
-                    loss = anchor_loss_weighted + lambda_mse * loss_mse
+                    loss = anchor_loss_weighted + current_l2_ratio * loss_mse
                 else:
                     loss = anchor_loss_weighted
                 

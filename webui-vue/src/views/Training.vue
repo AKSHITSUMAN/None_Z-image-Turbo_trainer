@@ -178,8 +178,8 @@
             <span class="value">{{ currentConfig.training?.lambda_style ?? 0.3 }}</span>
           </div>
           <div class="preview-item" v-if="currentConfig.acrf?.raft_mode">
-            <span class="label">L2 混合</span>
-            <span class="value highlight">✓ {{ (currentConfig.acrf?.free_stream_ratio ?? 0.3) * 100 }}%</span>
+            <span class="label">L2 调度</span>
+            <span class="value highlight">{{ getL2ScheduleLabel() }}</span>
           </div>
           <div class="preview-item">
             <span class="label">损失组合</span>
@@ -419,6 +419,23 @@ function getEnabledLossLabel(training: any, acrf?: any): string {
   if (training.enable_style) parts.push('Style')
   if (acrf?.raft_mode) parts.push('L2')
   return parts.join(' + ')
+}
+
+function getL2ScheduleLabel(): string {
+  const acrf = currentConfig.value?.acrf
+  if (!acrf?.raft_mode) return '未启用'
+  
+  const mode = acrf.l2_schedule_mode || 'constant'
+  const initial = acrf.l2_initial_ratio ?? 0.3
+  const final = acrf.l2_final_ratio ?? initial
+  
+  const modeLabels: Record<string, string> = {
+    'constant': `固定 ${(initial * 100).toFixed(0)}%`,
+    'linear_increase': `${(initial * 100).toFixed(0)}% → ${(final * 100).toFixed(0)}%`,
+    'linear_decrease': `${(initial * 100).toFixed(0)}% → ${(final * 100).toFixed(0)}%`,
+    'step': `阶梯 ${(initial * 100).toFixed(0)}%→${(final * 100).toFixed(0)}%`
+  }
+  return modeLabels[mode] || `${(initial * 100).toFixed(0)}%`
 }
 
 function formatTime(seconds: number): string {

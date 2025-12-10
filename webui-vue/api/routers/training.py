@@ -532,6 +532,11 @@ def generate_training_toml_config(config: Dict[str, Any], model_type: str = "zim
         # RAFT 混合模式参数
         f"raft_mode = {'true' if config.get('acrf', {}).get('raft_mode', False) else 'false'}",
         f"free_stream_ratio = {config.get('acrf', {}).get('free_stream_ratio', 0.3)}",
+        # L2 调度参数
+        f'l2_schedule_mode = "{config.get("acrf", {}).get("l2_schedule_mode", "constant")}"',
+        f"l2_initial_ratio = {config.get('acrf', {}).get('l2_initial_ratio', 0.3)}",
+        f"l2_final_ratio = {config.get('acrf', {}).get('l2_final_ratio', 0.3)}",
+        f'l2_milestones = "{config.get("acrf", {}).get("l2_milestones", "")}"',
         # Latent Jitter (构图突破)
         f"latent_jitter_scale = {config.get('acrf', {}).get('latent_jitter_scale', 0.0)}",
         "",

@@ -39,6 +39,7 @@ from zimage_trainer.networks.lora import LoRANetwork
 from zimage_trainer.dataset.dataloader import create_dataloader
 from zimage_trainer.acrf_trainer import ACRFTrainer
 from zimage_trainer.utils.snr_utils import compute_snr_weights
+from zimage_trainer.utils.l2_scheduler import L2RatioScheduler, create_l2_scheduler_from_args
 from zimage_trainer.losses.frequency_aware_loss import FrequencyAwareLoss
 from zimage_trainer.losses.style_structure_loss import LatentStyleStructureLoss
 from zimage_trainer.utils.memory_optimizer import MemoryOptimizer
@@ -119,6 +120,17 @@ def parse_args():
     parser.add_argument("--enable_turbo", type=bool, default=True)
     parser.add_argument("--raft_mode", type=bool, default=False)
     parser.add_argument("--free_stream_ratio", type=float, default=0.3)
+    
+    # L2 Ratio Schedule
+    parser.add_argument("--l2_schedule_mode", type=str, default="constant",
+        choices=["constant", "linear_increase", "linear_decrease", "step"],
+        help="L2 ratio 调度模式")
+    parser.add_argument("--l2_initial_ratio", type=float, default=None,
+        help="L2 起始比例 (默认使用 free_stream_ratio)")
+    parser.add_argument("--l2_final_ratio", type=float, default=None,
+        help="L2 结束比例")
+    parser.add_argument("--l2_milestones", type=str, default="",
+        help="阶梯模式切换点 (epoch, 逗号分隔)")
     
     # Optimizer
     parser.add_argument("--optimizer_type", type=str, default="AdamW8bit")
@@ -424,6 +436,11 @@ def main():
     logger.info("[TARGET] Starting training")
     logger.info("=" * 60)
     
+    # 创建 L2 调度器
+    l2_scheduler = create_l2_scheduler_from_args(args)
+    if l2_scheduler:
+        logger.info(f"[L2 Schedule] {l2_scheduler.get_schedule_info()}")
+    
     global_step = 0
     ema_loss = None
     ema_decay = 0.99
@@ -432,8 +449,11 @@ def main():
         if _interrupted:
             logger.info("[EXIT] Training interrupted by user")
             break
-            
-        logger.info(f"\nEpoch {epoch + 1}/{args.num_train_epochs}")
+        
+        # 获取当前 epoch 的 L2 ratio
+        current_l2_ratio = l2_scheduler.get_ratio(epoch + 1) if l2_scheduler else getattr(args, 'free_stream_ratio', 0.3)
+        
+        logger.info(f"\nEpoch {epoch + 1}/{args.num_train_epochs} [L2 ratio: {current_l2_ratio:.3f}]")
         
         for step, batch in enumerate(tqdm(dataloader, desc=f"Epoch {epoch+1}", disable=True)):
             if _interrupted:
@@ -589,7 +609,7 @@ def main():
                 
                 # 自由流 L2 不加权，直接加到总损失
                 if l2_loss_val > 0:
-                    loss = anchor_loss_weighted + args.free_stream_ratio * l2_loss
+                    loss = anchor_loss_weighted + current_l2_ratio * l2_loss
                 else:
                     loss = anchor_loss_weighted
                 
