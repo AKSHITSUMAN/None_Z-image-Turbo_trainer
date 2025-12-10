@@ -528,6 +528,10 @@ def main():
                 raft_mode = getattr(args, 'raft_mode', False)
                 free_stream_ratio = getattr(args, 'free_stream_ratio', 0.3)
                 
+                # 第一步调试日志
+                if global_step == 0:
+                    logger.info(f"  [RAFT DEBUG] In loop: raft_mode={raft_mode}, free_stream_ratio={free_stream_ratio}")
+                
                 if raft_mode and free_stream_ratio > 0:
                     # 自由流: 全时间步均匀随机采样
                     free_sigmas = torch.rand(batch_size, device=latents.device, dtype=weight_dtype)
