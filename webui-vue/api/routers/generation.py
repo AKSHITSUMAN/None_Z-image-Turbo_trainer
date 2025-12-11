@@ -78,16 +78,29 @@ def load_pipeline_with_adapter(model_type: str):
         tokenizer = AutoTokenizer.from_pretrained(str(tokenizer_path), local_files_only=True)
         text_processor = AutoProcessor.from_pretrained(str(tokenizer_path), local_files_only=True)
         
-        # 5. Image Encoder (用于 IP-Adapter 等，通常在 image_encoder 目录，如果是可选的需处理)
-        # 注意: LongCatPipeline 似乎强制要求 image_encoder
-        try:
-            image_encoder_path = model_path / "image_encoder"
-            image_encoder = CLIPVisionModelWithProjection.from_pretrained(str(image_encoder_path), local_files_only=True).to(dtype=dtype)
-            feature_extractor = CLIPImageProcessor.from_pretrained(str(image_encoder_path), local_files_only=True)
-        except Exception:
-            # 如果不存在，尝试做一个 dummy 或者报错 (LongCat 似乎需要它)
-            # 暂时假设存在，如果不存在说明模型文件缺失
-            raise FileNotFoundError(f"Image Encoder not found in {model_path}/image_encoder. LongCat pipeline requires it.")
+        # 5. Image Encoder (用于 IP-Adapter 等)
+        # 注意: LongCat Pipeline 需要 image_encoder，如果不存在则使用 None
+        image_encoder_path = model_path / "image_encoder"
+        image_encoder = None
+        feature_extractor = None
+        
+        if image_encoder_path.exists():
+            try:
+                # 确保路径是绝对路径字符串
+                ie_path_str = str(image_encoder_path.resolve())
+                image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+                    ie_path_str, 
+                    local_files_only=True
+                ).to(dtype=dtype)
+                feature_extractor = CLIPImageProcessor.from_pretrained(
+                    ie_path_str, 
+                    local_files_only=True
+                )
+            except Exception as e:
+                print(f"[WARN] Failed to load image_encoder from {image_encoder_path}: {e}")
+                print("[INFO] LongCat will run without image_encoder (IP-Adapter disabled)")
+        else:
+            print(f"[INFO] image_encoder not found at {image_encoder_path}, running without it")
 
         pipe = LongCatImagePipeline(
             scheduler=scheduler,
