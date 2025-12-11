@@ -500,6 +500,77 @@
                 <el-input-number v-model="ds.resolution_limit" :min="256" :max="2048" :step="64" controls-position="right" class="input-fixed" />
               </div>
             </div>
+            
+            <!-- 正则数据集配置（防止过拟合） -->
+            <div class="subsection-label" style="margin-top: 20px">
+              正则数据集 (Regularization)
+              <el-tooltip content="正则数据集用于防止过拟合，保持模型原有能力。训练时会混合使用正则数据。" placement="top">
+                <el-icon class="help-icon"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </div>
+            
+            <div class="control-row">
+              <span class="label">启用正则数据集</span>
+              <el-switch v-model="config.reg_dataset.enabled" />
+            </div>
+            
+            <template v-if="config.reg_dataset.enabled">
+              <div class="control-row">
+                <span class="label">
+                  混合比例
+                  <el-tooltip content="正则数据占总数据的比例。0.5 = 1:1 混合，0.3 = 正则占 30%" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-slider v-model="config.reg_dataset.ratio" :min="0.1" :max="0.9" :step="0.1" :show-tooltip="false" class="slider-flex" />
+                <el-input-number v-model="config.reg_dataset.ratio" :min="0.1" :max="0.9" :step="0.1" controls-position="right" class="input-fixed" :precision="1" />
+              </div>
+              
+              <div class="control-row">
+                <span class="label">
+                  正则损失权重
+                  <el-tooltip content="正则数据的损失权重。1.0 = 与训练数据相同权重" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-slider v-model="config.reg_dataset.weight" :min="0.1" :max="2.0" :step="0.1" :show-tooltip="false" class="slider-flex" />
+                <el-input-number v-model="config.reg_dataset.weight" :min="0.1" :max="2.0" :step="0.1" controls-position="right" class="input-fixed" :precision="1" />
+              </div>
+              
+              <div class="form-row-full">
+                <label>选择正则数据集</label>
+                <div class="dataset-actions">
+                  <el-select v-model="selectedRegDataset" placeholder="选择已缓存的数据集" filterable clearable style="flex: 1">
+                    <el-option v-for="ds in cachedDatasets" :key="ds.name" :label="ds.name" :value="ds.cache_directory">
+                      <span style="float: left">{{ ds.name }}</span>
+                      <span style="float: right; color: var(--el-text-color-secondary); font-size: 12px">{{ ds.files }} 文件</span>
+                    </el-option>
+                  </el-select>
+                  <el-button size="small" type="primary" @click="addRegDataset" :icon="Plus">添加</el-button>
+                </div>
+              </div>
+              
+              <div v-if="config.reg_dataset.datasets.length === 0" class="empty-datasets">
+                <el-icon><FolderOpened /></el-icon>
+                <p>暂无正则数据集</p>
+              </div>
+              
+              <div v-for="(rds, ridx) in config.reg_dataset.datasets" :key="ridx" class="dataset-item reg-dataset-item">
+                <div class="dataset-header">
+                  <span class="dataset-index">正则数据集 {{ ridx + 1 }}</span>
+                  <el-button type="danger" size="small" @click="removeRegDataset(ridx)" :icon="Delete">删除</el-button>
+                </div>
+                <div class="form-row-full">
+                  <label>缓存目录路径</label>
+                  <el-input v-model="rds.cache_directory" placeholder="正则数据集缓存路径" />
+                </div>
+                <div class="control-row">
+                  <span class="label">重复次数</span>
+                  <el-slider v-model="rds.num_repeats" :min="1" :max="50" :step="1" :show-tooltip="false" class="slider-flex" />
+                  <el-input-number v-model="rds.num_repeats" :min="1" :max="50" controls-position="right" class="input-fixed" />
+                </div>
+              </div>
+            </template>
           </div>
         </el-collapse-item>
 
@@ -779,6 +850,7 @@ const saveAsName = ref('')
 // Dataset management
 const cachedDatasets = ref<any[]>([])
 const selectedDataset = ref('')
+const selectedRegDataset = ref('')
 
 // System paths (read-only, from env)
 const systemPaths = ref({
@@ -910,6 +982,12 @@ function getDefaultConfig() {
       enable_bucket: true,
       datasets: [] as any[]
     },
+    reg_dataset: {
+      enabled: false,
+      weight: 1.0,
+      ratio: 0.5,
+      datasets: [] as any[]
+    },
     advanced: {
       max_grad_norm: 1.0,
       gradient_checkpointing: true,
@@ -971,6 +1049,11 @@ async function loadConfig(configName: string) {
         ...defaultCfg.dataset, 
         ...res.data.dataset,
         datasets: res.data.dataset?.datasets || []
+      },
+      reg_dataset: {
+        ...defaultCfg.reg_dataset,
+        ...res.data.reg_dataset,
+        datasets: res.data.reg_dataset?.datasets || []
       },
       advanced: { ...defaultCfg.advanced, ...res.data.advanced }
     }
@@ -1147,6 +1230,26 @@ function addDataset() {
 // Remove dataset
 function removeDataset(idx: number) {
   config.value.dataset.datasets.splice(idx, 1)
+}
+
+// 正则数据集操作
+function addRegDataset() {
+  if (selectedRegDataset.value) {
+    config.value.reg_dataset.datasets.push({
+      cache_directory: selectedRegDataset.value,
+      num_repeats: 1
+    })
+    selectedRegDataset.value = ''
+  } else {
+    config.value.reg_dataset.datasets.push({
+      cache_directory: '',
+      num_repeats: 1
+    })
+  }
+}
+
+function removeRegDataset(idx: number) {
+  config.value.reg_dataset.datasets.splice(idx, 1)
 }
 
 // 解析学习率（支持科学计数法）

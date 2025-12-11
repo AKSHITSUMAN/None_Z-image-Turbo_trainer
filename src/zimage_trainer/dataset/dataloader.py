@@ -387,3 +387,87 @@ def _read_dataset_config(config_path: str) -> dict:
     
     # 3. 根级别配置 (兼容旧版)
     return config
+
+
+def create_reg_dataloader(args) -> Optional[DataLoader]:
+    """
+    创建正则数据集的 DataLoader（用于防止过拟合）。
+    
+    Args:
+        args: 训练参数，包含 dataset_config
+        
+    Returns:
+        DataLoader: 正则数据加载器，如果未启用则返回 None
+    """
+    # 读取配置
+    if not hasattr(args, 'dataset_config') or not args.dataset_config:
+        return None
+    
+    reg_config = _read_reg_dataset_config(args.dataset_config)
+    
+    if not reg_config.get('enabled', False):
+        return None
+    
+    datasets = reg_config.get('datasets', [])
+    if not datasets:
+        logger.info("正则数据集已启用但未配置数据源，跳过")
+        return None
+    
+    batch_size = getattr(args, 'batch_size', 4)
+    num_workers = getattr(args, 'num_workers', 4)
+    max_sequence_length = getattr(args, 'max_sequence_length', 512)
+    cache_arch = getattr(args, 'cache_arch', 'zi')
+    
+    logger.info(f"🛡️ 加载正则数据集 (防过拟合)，数据源: {len(datasets)} 个")
+    
+    # 创建 dataset
+    dataset = ZImageLatentDataset(
+        datasets=datasets,
+        max_sequence_length=max_sequence_length,
+        cache_arch=cache_arch,
+    )
+    
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        collate_fn=collate_fn,
+        pin_memory=True,
+        drop_last=True,
+    )
+    
+    logger.info(f"  正则数据集大小: {len(dataset)} 样本, {len(dataloader)} batches")
+    logger.info(f"  正则权重: {reg_config.get('weight', 1.0)}, 混合比例: {reg_config.get('ratio', 0.5)}")
+    
+    return dataloader
+
+
+def _read_reg_dataset_config(config_path: str) -> dict:
+    """
+    读取正则数据集配置 [reg_dataset]
+    """
+    if toml is None:
+        return {}
+    
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = toml.load(f)
+    
+    if 'reg_dataset' in config:
+        reg_config = config['reg_dataset'].copy()
+        # 将 sources 重命名为 datasets
+        if 'sources' in reg_config:
+            reg_config['datasets'] = reg_config.pop('sources')
+        return reg_config
+    
+    return {}
+
+
+def get_reg_config(args) -> dict:
+    """
+    获取正则数据集配置参数（weight, ratio）供训练脚本使用
+    """
+    if not hasattr(args, 'dataset_config') or not args.dataset_config:
+        return {'enabled': False, 'weight': 1.0, 'ratio': 0.5}
+    
+    return _read_reg_dataset_config(args.dataset_config)

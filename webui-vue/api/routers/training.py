@@ -624,6 +624,32 @@ def generate_training_toml_config(config: Dict[str, Any], model_type: str = "zim
                 "",
             ])
     
+    # 正则数据集配置（防止过拟合）
+    reg_dataset = config.get("reg_dataset", {})
+    reg_enabled = reg_dataset.get("enabled", False)
+    reg_datasets = reg_dataset.get("datasets", [])
+    
+    if reg_enabled and reg_datasets:
+        toml_lines.extend([
+            "",
+            "# ============ 正则数据集配置 (Regularization) ============",
+            "[reg_dataset]",
+            "enabled = true",
+            f"weight = {reg_dataset.get('weight', 1.0)}",  # 正则数据权重
+            f"ratio = {reg_dataset.get('ratio', 0.5)}",   # 正则数据占比 (0.5 = 1:1 混合)
+            "",
+        ])
+        
+        for rds in reg_datasets:
+            reg_cache_dir = rds.get("cache_directory", "")
+            if reg_cache_dir:
+                toml_lines.extend([
+                    "[[reg_dataset.sources]]",
+                    f'cache_directory = "{reg_cache_dir.replace(chr(92), "/")}"',
+                    f"num_repeats = {rds.get('num_repeats', 1)}",
+                    "",
+                ])
+    
     return "\n".join(toml_lines)
 
 
