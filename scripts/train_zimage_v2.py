@@ -480,6 +480,11 @@ def main():
     for epoch in range(args.num_train_epochs):
         if _interrupted:
             logger.info("[EXIT] Training interrupted by user")
+            # 紧急保存当前权重
+            if accelerator.is_main_process and global_step > 0:
+                emergency_path = Path(args.output_dir) / f"{args.output_name}_interrupted_step{global_step}.safetensors"
+                network.save_weights(str(emergency_path), dtype=weight_dtype)
+                logger.info(f"[SAVE] Emergency checkpoint saved: {emergency_path}")
             break
         
         # 获取当前 epoch 的 L2 ratio
@@ -489,6 +494,11 @@ def main():
         
         for step, batch in enumerate(tqdm(dataloader, desc=f"Epoch {epoch+1}", disable=True)):
             if _interrupted:
+                # 中途中断，保存当前进度
+                if accelerator.is_main_process and global_step > 0:
+                    emergency_path = Path(args.output_dir) / f"{args.output_name}_interrupted_step{global_step}.safetensors"
+                    network.save_weights(str(emergency_path), dtype=weight_dtype)
+                    logger.info(f"[SAVE] Emergency checkpoint saved: {emergency_path}")
                 break
                 
             with accelerator.accumulate(transformer):
