@@ -99,6 +99,9 @@ async def scan_dataset(request: DatasetScanRequest):
 @router.get("/list")
 async def list_datasets():
     """List all datasets in the datasets folder"""
+    print(f"[Dataset] Scanning directory: {DATASETS_DIR}")
+    print(f"[Dataset] Directory exists: {DATASETS_DIR.exists()}")
+    
     DATASETS_DIR.mkdir(parents=True, exist_ok=True)
     
     datasets = []
@@ -114,7 +117,12 @@ async def list_datasets():
                 "imageCount": image_count
             })
     
-    return {"datasets": datasets, "datasetsDir": str(DATASETS_DIR)}
+    print(f"[Dataset] Found {len(datasets)} datasets")
+    return {
+        "datasets": datasets, 
+        "datasetsDir": str(DATASETS_DIR),
+        "datasetsDirExists": DATASETS_DIR.exists()
+    }
 
 @router.post("/create")
 async def create_dataset(name: str = Form(...)):

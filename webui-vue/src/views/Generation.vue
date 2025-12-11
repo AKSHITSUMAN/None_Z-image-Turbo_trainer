@@ -685,7 +685,8 @@ const deleteHistoryItem = async (item: any, fromLightbox = false) => {
 const fetchLoras = async () => {
   try {
     const res = await axios.get('/api/loras')
-    loraList.value = res.data
+    // 新的返回格式: { loras, loraPath, loraPathExists }
+    loraList.value = res.data.loras || res.data || []
   } catch (e) {
     console.error('Failed to fetch LoRAs:', e)
   }

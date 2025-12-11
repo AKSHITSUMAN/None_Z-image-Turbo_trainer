@@ -153,18 +153,27 @@ async def get_loras():
     """Scan for LoRA models in LORA_PATH directory"""
     loras = []
     
-    for root, _, files in os.walk(LORA_PATH):
-        for file in files:
-            if file.endswith(".safetensors"):
-                full_path = Path(root) / file
-                rel_path = full_path.relative_to(LORA_PATH)
-                loras.append({
-                    "name": str(rel_path),
-                    "path": str(full_path),
-                    "size": full_path.stat().st_size
-                })
+    print(f"[LoRA] Scanning directory: {LORA_PATH}")
+    print(f"[LoRA] Directory exists: {LORA_PATH.exists()}")
     
-    return sorted(loras, key=lambda x: x["name"])
+    if LORA_PATH.exists():
+        for root, _, files in os.walk(LORA_PATH):
+            for file in files:
+                if file.endswith(".safetensors"):
+                    full_path = Path(root) / file
+                    rel_path = full_path.relative_to(LORA_PATH)
+                    loras.append({
+                        "name": str(rel_path),
+                        "path": str(full_path),
+                        "size": full_path.stat().st_size
+                    })
+    
+    # 返回包含扫描路径的信息，便于调试
+    return {
+        "loras": sorted(loras, key=lambda x: x["name"]),
+        "loraPath": str(LORA_PATH),
+        "loraPathExists": LORA_PATH.exists()
+    }
 
 @router.get("/loras/download")
 async def download_lora(path: str):

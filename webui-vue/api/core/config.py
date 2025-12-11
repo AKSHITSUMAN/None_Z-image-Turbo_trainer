@@ -96,6 +96,26 @@ DATASETS_DIR.mkdir(parents=True, exist_ok=True)
 LORA_PATH.mkdir(parents=True, exist_ok=True)
 
 # ============================================================================
+# 启动时路径诊断日志
+# ============================================================================
+print("=" * 60)
+print("[CONFIG] 路径配置诊断")
+print("=" * 60)
+print(f"[CONFIG] PROJECT_ROOT     = {PROJECT_ROOT}")
+print(f"[CONFIG] .env 文件路径     = {PROJECT_ROOT / '.env'}")
+print(f"[CONFIG] .env 文件存在     = {(PROJECT_ROOT / '.env').exists()}")
+print("-" * 60)
+print(f"[CONFIG] DATASET_PATH env = {os.getenv('DATASET_PATH', '<未设置>')}")
+print(f"[CONFIG] DATASETS_DIR     = {DATASETS_DIR}")
+print(f"[CONFIG] DATASETS_DIR 存在 = {DATASETS_DIR.exists()}")
+print("-" * 60)
+print(f"[CONFIG] OUTPUT_PATH env  = {os.getenv('OUTPUT_PATH', '<未设置>')}")
+print(f"[CONFIG] LORA_PATH env    = {os.getenv('LORA_PATH', '<未设置>')}")
+print(f"[CONFIG] LORA_PATH        = {LORA_PATH}")
+print(f"[CONFIG] LORA_PATH 存在   = {LORA_PATH.exists()}")
+print("=" * 60)
+
+# ============================================================================
 # Pydantic Models
 # ============================================================================
 
