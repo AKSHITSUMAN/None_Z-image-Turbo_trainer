@@ -278,6 +278,10 @@
             <span class="label">随机种子</span>
             <span class="value">{{ currentConfig.advanced?.seed ?? 42 }}</span>
           </div>
+          <div class="preview-item" v-if="currentConfig.advanced?.num_gpus > 1 || currentConfig.advanced?.gpu_ids">
+            <span class="label">GPU 配置</span>
+            <span class="value highlight">{{ getGpuConfigLabel() }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -459,6 +463,21 @@ function getLoraAdvancedLabel(): string {
   if (lora.train_single_stream) parts.push('单流')
   
   return parts.length > 0 ? `+${parts.join('+')}` : ''
+}
+
+function getGpuConfigLabel(): string {
+  const advanced = currentConfig.value?.advanced || {}
+  const numGpus = advanced.num_gpus || 1
+  const gpuIds = advanced.gpu_ids || ''
+  
+  if (numGpus > 1 && gpuIds) {
+    return `${numGpus} GPUs (${gpuIds})`
+  } else if (numGpus > 1) {
+    return `${numGpus} GPUs`
+  } else if (gpuIds) {
+    return `GPU ${gpuIds}`
+  }
+  return '单卡'
 }
 
 function formatTime(seconds: number): string {
