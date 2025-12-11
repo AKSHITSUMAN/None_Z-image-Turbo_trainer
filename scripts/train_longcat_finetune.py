@@ -316,6 +316,31 @@ def main():
     )
     logger.info(f"数据集大小: {len(dataloader)} batches")
     
+    # 正则数据集加载 (防止过拟合)
+    reg_dataloader = None
+    reg_iterator = None
+    reg_weight = 0.0
+    reg_ratio = 0.0
+    
+    if 'reg_dataset' in config and config['reg_dataset'].get('enabled', False):
+        reg_config = config['reg_dataset']
+        reg_datasets = reg_config.get('sources', reg_config.get('datasets', []))
+        if reg_datasets:
+            reg_dataset = LongCatDataset(reg_datasets)
+            reg_dataloader = torch.utils.data.DataLoader(
+                reg_dataset,
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=num_workers,
+                pin_memory=True
+            )
+            reg_weight = reg_config.get('weight', 1.0)
+            reg_ratio = reg_config.get('ratio', 0.5)
+            logger.info(f"  [REG] 正则数据集已加载: {len(reg_dataloader)} batches, weight={reg_weight}, ratio={reg_ratio}")
+    
+    if not reg_dataloader:
+        logger.info("  [REG] 未启用正则数据集")
+    
     # 6. 计算训练步数
     num_update_steps_per_epoch = math.ceil(len(dataloader) / args.gradient_accumulation_steps)
     args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
@@ -522,6 +547,61 @@ def main():
                     style = loss_components.get('style', 0)
                     l2 = loss_components.get('L2', 0)
                     print(f"[STEP] {global_step}/{max_train_steps} epoch={epoch+1}/{args.num_train_epochs} loss={current_loss:.4f} ema={ema_loss:.4f} l1={l1:.4f} cos={cosine:.4f} freq={freq:.4f} style={style:.4f} L2={l2:.4f} lr={current_lr:.2e}", flush=True)
+                
+                # ========== 正则训练步骤 (按比例执行) ==========
+                if reg_dataloader and reg_ratio > 0:
+                    reg_interval = max(1, int(1.0 / reg_ratio))
+                    if global_step % reg_interval == 0:
+                        if reg_iterator is None:
+                            reg_iterator = iter(reg_dataloader)
+                        try:
+                            reg_batch = next(reg_iterator)
+                        except StopIteration:
+                            reg_iterator = iter(reg_dataloader)
+                            reg_batch = next(reg_iterator)
+                        
+                        with accelerator.accumulate(transformer):
+                            reg_latents = reg_batch['latents'].to(accelerator.device, dtype=weight_dtype)
+                            reg_text_embeds = reg_batch['text_embeds']
+                            if isinstance(reg_text_embeds, list):
+                                reg_text_embeds = torch.stack([t.to(accelerator.device, dtype=weight_dtype) for t in reg_text_embeds])
+                            else:
+                                reg_text_embeds = reg_text_embeds.to(accelerator.device, dtype=weight_dtype)
+                            
+                            reg_batch_size, C, H, W = reg_latents.shape
+                            reg_noise = torch.randn_like(reg_latents)
+                            reg_image_seq_len = (H // 2) * (W // 2)
+                            
+                            reg_timesteps, reg_sigmas = adapter.sample_timesteps(
+                                batch_size=reg_batch_size,
+                                device=accelerator.device,
+                                dtype=weight_dtype,
+                                image_seq_len=reg_image_seq_len,
+                                use_anchor=args.use_anchor,
+                            )
+                            
+                            reg_noisy = reg_sigmas.view(-1, 1, 1, 1) * reg_noise + (1 - reg_sigmas.view(-1, 1, 1, 1)) * reg_latents
+                            reg_target = reg_noise - reg_latents
+                            
+                            reg_packed, reg_pack_info = adapter.pack_latents(reg_noisy)
+                            reg_position_ids = adapter.get_position_ids(reg_batch_size, H, W, accelerator.device)
+                            
+                            reg_output = adapter.forward(
+                                transformer=transformer,
+                                hidden_states=reg_packed,
+                                encoder_hidden_states=reg_text_embeds,
+                                timesteps=reg_sigmas,
+                                position_ids=reg_position_ids,
+                            )
+                            reg_pred = adapter.unpack_latents(reg_output, reg_pack_info).to(dtype=weight_dtype)
+                            
+                            reg_loss = F.mse_loss(reg_pred, reg_target) * reg_weight
+                            accelerator.backward(reg_loss)
+                        
+                        if accelerator.sync_gradients:
+                            accelerator.clip_grad_norm_(trainable_params, args.max_grad_norm)
+                            optimizer.step()
+                            optimizer.zero_grad()
             
             # 定期清理显存
             if step % 50 == 0:
