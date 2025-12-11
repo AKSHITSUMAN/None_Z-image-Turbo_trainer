@@ -67,8 +67,15 @@ def load_pipeline_with_adapter(model_type: str):
         transformer = LongCatImageTransformer2DModel.from_pretrained(str(desc_path), local_files_only=True).to(dtype=dtype)
         
         # 4. Text Encoder & Processor
+        # LongCat 需要 Qwen2_5_VLForConditionalGeneration (有 generate 方法用于 prompt rewriting)
+        # AutoModel 只加载基础的 Qwen2_5_VLModel，没有 generate 方法
         te_path = get_model_path(model_type, "text_encoder")
-        text_encoder = AutoModel.from_pretrained(str(te_path), local_files_only=True).to(dtype=dtype)
+        from transformers import Qwen2_5_VLForConditionalGeneration
+        text_encoder = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+            str(te_path), 
+            local_files_only=True,
+            torch_dtype=dtype
+        )
         
         # Tokenizer & Processor may be in 'tokenizer' subfolder or 'text_encoder'
         tokenizer_path = model_path / "tokenizer"
