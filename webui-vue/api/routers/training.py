@@ -560,12 +560,32 @@ def generate_training_toml_config(config: Dict[str, Any], model_type: str = "zim
         # Latent Jitter (构图突破)
         f"latent_jitter_scale = {config.get('acrf', {}).get('latent_jitter_scale', 0.0)}",
         "",
-        "[lora]",
-        f"network_dim = {config.get('network', {}).get('dim', 8)}",
-        f"network_alpha = {config.get('network', {}).get('alpha', 4.0)}",
-        f"train_adaln = {'true' if config.get('lora', {}).get('train_adaln', False) else 'false'}",
-        f"train_norm = {'true' if config.get('lora', {}).get('train_norm', False) else 'false'}",
-        f"train_single_stream = {'true' if config.get('lora', {}).get('train_single_stream', False) else 'false'}",
+    ]
+    
+    # [lora] 部分 - 根据继续训练模式决定输出内容
+    lora_cfg = config.get("lora", {})
+    resume_training = lora_cfg.get("resume_training", False)
+    resume_lora_path = lora_cfg.get("resume_lora_path", "")
+    
+    if resume_training and resume_lora_path:
+        # 继续训练模式：只输出 resume_lora 路径，不输出 rank/层设置
+        toml_lines.extend([
+            "[lora]",
+            f'resume_lora = "{resume_lora_path.replace(chr(92), "/")}"',
+            "# Rank 和层设置将从 LoRA 文件自动读取",
+        ])
+    else:
+        # 新建 LoRA 模式：输出完整设置
+        toml_lines.extend([
+            "[lora]",
+            f"network_dim = {config.get('network', {}).get('dim', 8)}",
+            f"network_alpha = {config.get('network', {}).get('alpha', 4.0)}",
+            f"train_adaln = {'true' if lora_cfg.get('train_adaln', False) else 'false'}",
+            f"train_norm = {'true' if lora_cfg.get('train_norm', False) else 'false'}",
+            f"train_single_stream = {'true' if lora_cfg.get('train_single_stream', False) else 'false'}",
+        ])
+    
+    toml_lines.extend([
         "",
         "[training]",
         f'output_name = "{config.get("training", {}).get("output_name", "zimage-lora")}"',
@@ -610,7 +630,7 @@ def generate_training_toml_config(config: Dict[str, Any], model_type: str = "zim
         f"shuffle = {'true' if dataset_cfg.get('shuffle', True) else 'false'}",
         f"enable_bucket = {'true' if dataset_cfg.get('enable_bucket', True) else 'false'}",
         "",
-    ]
+    ])
     
     # 添加数据集源（带完整配置）
     for ds in datasets:

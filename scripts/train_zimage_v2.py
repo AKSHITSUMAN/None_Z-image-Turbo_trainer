@@ -85,6 +85,8 @@ def parse_args():
     # LoRA
     parser.add_argument("--network_dim", type=int, default=16)
     parser.add_argument("--network_alpha", type=float, default=16)
+    parser.add_argument("--resume_lora", type=str, default=None,
+        help="继续训练的 LoRA 路径 (.safetensors)，Rank 将从文件自动推断")
     
     # AC-RF / Turbo
     parser.add_argument("--turbo_steps", type=int, default=10)
@@ -191,6 +193,7 @@ def parse_args():
         # LoRA
         args.network_dim = lora_cfg.get("network_dim", args.network_dim)
         args.network_alpha = lora_cfg.get("network_alpha", args.network_alpha)
+        args.resume_lora = lora_cfg.get("resume_lora", args.resume_lora)
         
         # AC-RF
         args.turbo_steps = acrf_cfg.get("turbo_steps", args.turbo_steps)
@@ -323,6 +326,21 @@ def main():
     # =========================================================================
     # 3. Apply LoRA with proper dtype
     # =========================================================================
+    
+    # 继续训练模式：从已有 LoRA 文件推断 rank
+    if args.resume_lora and os.path.exists(args.resume_lora):
+        logger.info(f"\n[RESUME] 继续训练模式: {args.resume_lora}")
+        from safetensors.torch import load_file
+        state_dict = load_file(args.resume_lora)
+        # 从权重推断 rank (找第一个 lora_down 权重)
+        for key, value in state_dict.items():
+            if "lora_down" in key and value.dim() == 2:
+                args.network_dim = value.shape[0]  # down 的 out_features 就是 rank
+                logger.info(f"  [RESUME] 从权重推断 rank = {args.network_dim}")
+                break
+        else:
+            logger.warning("  [RESUME] 无法推断 rank，使用默认值")
+    
     logger.info(f"\n[SETUP] Creating LoRA (rank={args.network_dim})...")
     
     # 动态构建 target_names 和 exclude_patterns
@@ -349,6 +367,11 @@ def main():
         exclude_patterns=exclude_patterns,
     )
     network.apply_to(transformer)
+    
+    # 继续训练模式：加载已有权重
+    if args.resume_lora and os.path.exists(args.resume_lora):
+        network.load_weights(args.resume_lora)
+        logger.info(f"  [RESUME] 已加载 LoRA 权重: {os.path.basename(args.resume_lora)}")
     
     # CRITICAL: Convert LoRA params to same dtype as model (BF16)
     network.to(accelerator.device, dtype=weight_dtype)

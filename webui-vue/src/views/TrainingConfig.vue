@@ -175,56 +175,99 @@
             </div>
           </template>
           <div class="collapse-content">
+            <!-- 继续训练模式开关 -->
             <div class="control-row">
               <span class="label">
-                Network Dim (Rank)
-                <el-tooltip content="LoRA 矩阵的秩，越大学习能力越强但文件越大，推荐 4-32" placement="top">
+                继续训练已有 LoRA
+                <el-tooltip content="加载已有 LoRA 继续训练，Rank/层设置将从 LoRA 文件自动读取" placement="top">
                   <el-icon class="help-icon"><QuestionFilled /></el-icon>
                 </el-tooltip>
               </span>
-              <el-slider v-model="config.network.dim" :min="4" :max="128" :step="4" :show-tooltip="false" class="slider-flex" />
-              <el-input-number v-model="config.network.dim" :min="4" :max="128" :step="4" controls-position="right" class="input-fixed" />
-            </div>
-            <div class="control-row">
-              <span class="label">
-                Network Alpha
-                <el-tooltip content="缩放因子，通常设为 Dim 的一半，影响学习率效果" placement="top">
-                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
-                </el-tooltip>
-              </span>
-              <el-slider v-model="config.network.alpha" :min="1" :max="64" :step="0.5" :show-tooltip="false" class="slider-flex" />
-              <el-input-number v-model="config.network.alpha" :min="1" :max="64" :step="0.5" controls-position="right" class="input-fixed" />
+              <el-switch v-model="config.lora.resume_training" />
             </div>
             
-            <!-- LoRA 高级选项 -->
-            <div class="subsection-label">高级选项 (LoRA Targets)</div>
-            <div class="control-row" v-if="config.model_type === 'zimage'">
-              <span class="label">
-                训练 AdaLN
-                <el-tooltip content="训练 AdaLN 调制层 (激进模式，可能导致过拟合)" placement="top">
-                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
-                </el-tooltip>
-              </span>
-              <el-switch v-model="config.lora.train_adaln" />
-            </div>
-            <div class="control-row" v-if="config.model_type === 'longcat'">
-              <span class="label">
-                训练 Norm 层
-                <el-tooltip content="训练 norm1.linear 和 norm1_context.linear" placement="top">
-                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
-                </el-tooltip>
-              </span>
-              <el-switch v-model="config.lora.train_norm" />
-            </div>
-            <div class="control-row" v-if="config.model_type === 'longcat'">
-              <span class="label">
-                训练单流层
-                <el-tooltip content="训练单流 Transformer 块 (proj_mlp, proj_out)" placement="top">
-                  <el-icon class="help-icon"><QuestionFilled /></el-icon>
-                </el-tooltip>
-              </span>
-              <el-switch v-model="config.lora.train_single_stream" />
-            </div>
+            <!-- 继续训练时显示 LoRA 选择器 -->
+            <template v-if="config.lora.resume_training">
+              <div class="form-row-full">
+                <label>
+                  选择 LoRA 文件
+                  <el-tooltip content="选择要继续训练的 LoRA 文件，Rank 将自动推断" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </label>
+                <el-select v-model="config.lora.resume_lora_path" placeholder="选择 LoRA 文件..." filterable clearable style="width: 100%">
+                  <el-option v-for="lora in loraList" :key="lora.path" :label="lora.name" :value="lora.path">
+                    <span style="float: left">{{ lora.name }}</span>
+                    <span style="float: right; color: var(--el-text-color-secondary); font-size: 12px">
+                      {{ (lora.size / 1024 / 1024).toFixed(1) }} MB
+                    </span>
+                  </el-option>
+                </el-select>
+              </div>
+              <el-alert 
+                v-if="config.lora.resume_lora_path" 
+                type="info" 
+                :closable="false" 
+                show-icon
+                style="margin-top: 12px"
+              >
+                Rank 和层设置将从 LoRA 文件自动读取
+              </el-alert>
+            </template>
+            
+            <!-- 新建 LoRA 时才显示 rank/alpha/层设置 -->
+            <template v-else>
+              <div class="control-row">
+                <span class="label">
+                  Network Dim (Rank)
+                  <el-tooltip content="LoRA 矩阵的秩，越大学习能力越强但文件越大，推荐 4-32" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-slider v-model="config.network.dim" :min="4" :max="128" :step="4" :show-tooltip="false" class="slider-flex" />
+                <el-input-number v-model="config.network.dim" :min="4" :max="128" :step="4" controls-position="right" class="input-fixed" />
+              </div>
+              <div class="control-row">
+                <span class="label">
+                  Network Alpha
+                  <el-tooltip content="缩放因子，通常设为 Dim 的一半，影响学习率效果" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-slider v-model="config.network.alpha" :min="1" :max="64" :step="0.5" :show-tooltip="false" class="slider-flex" />
+                <el-input-number v-model="config.network.alpha" :min="1" :max="64" :step="0.5" controls-position="right" class="input-fixed" />
+              </div>
+              
+              <!-- LoRA 高级选项 -->
+              <div class="subsection-label">高级选项 (LoRA Targets)</div>
+              <div class="control-row" v-if="config.model_type === 'zimage'">
+                <span class="label">
+                  训练 AdaLN
+                  <el-tooltip content="训练 AdaLN 调制层 (激进模式，可能导致过拟合)" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-switch v-model="config.lora.train_adaln" />
+              </div>
+              <div class="control-row" v-if="config.model_type === 'longcat'">
+                <span class="label">
+                  训练 Norm 层
+                  <el-tooltip content="训练 norm1.linear 和 norm1_context.linear" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-switch v-model="config.lora.train_norm" />
+              </div>
+              <div class="control-row" v-if="config.model_type === 'longcat'">
+                <span class="label">
+                  训练单流层
+                  <el-tooltip content="训练单流 Transformer 块 (proj_mlp, proj_out)" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </span>
+                <el-switch v-model="config.lora.train_single_stream" />
+              </div>
+            </template>
           </div>
         </el-collapse-item>
 
@@ -852,6 +895,9 @@ const cachedDatasets = ref<any[]>([])
 const selectedDataset = ref('')
 const selectedRegDataset = ref('')
 
+// LoRA 列表（用于继续训练功能）
+const loraList = ref<{name: string, path: string, size: number}[]>([])
+
 // System paths (read-only, from env)
 const systemPaths = ref({
   model_path: '',
@@ -942,6 +988,8 @@ function getDefaultConfig() {
       alpha: 4.0
     },
     lora: {
+      resume_training: false,
+      resume_lora_path: '',
       train_adaln: false,
       train_norm: false,
       train_single_stream: false
@@ -1019,6 +1067,7 @@ onMounted(async () => {
   
   await loadPresets()
   await loadCachedDatasets()
+  await loadLoraList()  // 加载 LoRA 列表（用于继续训练功能）
 })
 
 // Load list of saved configs
@@ -1199,6 +1248,16 @@ async function loadCachedDatasets() {
     cachedDatasets.value = res.data.datasets
   } catch (e) {
     console.error('Failed to load cached datasets:', e)
+  }
+}
+
+// Load LoRA list for resume training feature
+async function loadLoraList() {
+  try {
+    const res = await axios.get('/api/loras')
+    loraList.value = res.data.loras || []
+  } catch (e) {
+    console.error('Failed to load LoRA list:', e)
   }
 }
 
