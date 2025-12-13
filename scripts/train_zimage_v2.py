@@ -730,10 +730,6 @@ def main():
                         logger.error("  [OOM] GPU out of memory. Try reducing batch_size or enabling blocks_to_swap.")
                     raise
                 
-                # Memory optimization step
-                if memory_optimizer:
-                    memory_optimizer.optimize_training_step()
-                
             # 梯度累积完成后执行优化步骤 (在 accumulate 块外)
             if accelerator.sync_gradients:
                 accelerator.clip_grad_norm_(trainable_params, args.max_grad_norm)
