@@ -550,7 +550,11 @@ def main():
         # 获取当前 epoch 的 L2 ratio
         current_l2_ratio = l2_scheduler.get_ratio(epoch + 1) if l2_scheduler else getattr(args, 'free_stream_ratio', 0.3)
         
-        logger.info(f"\nEpoch {epoch + 1}/{args.num_train_epochs} [L2 ratio: {current_l2_ratio:.3f}]")
+        # 只在 RAFT 模式启用时显示 L2 ratio
+        if args.raft_mode:
+            logger.info(f"\nEpoch {epoch + 1}/{args.num_train_epochs} [L2={current_l2_ratio:.2f}]")
+        else:
+            logger.info(f"\nEpoch {epoch + 1}/{args.num_train_epochs}")
         
         for step, batch in enumerate(tqdm(dataloader, desc=f"Epoch {epoch+1}", disable=True)):
             if _interrupted:
