@@ -14,6 +14,8 @@
 
 </div>
 
+> 🙏 **特别感谢 [千景](https://www.bilibili.com/video/BV1FNBFYXEeU) 赞助 AI IDE 会员，助力本项目开发！**
+
 ---
 
 ## ✨ 特性

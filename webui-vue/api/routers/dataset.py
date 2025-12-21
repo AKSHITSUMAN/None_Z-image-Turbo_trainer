@@ -30,6 +30,55 @@ ALL_TEXT_SUFFIXES = ["_zi_te.safetensors", "_lc_te.safetensors"]
 _dataset_cache: dict[str, tuple[list, int, float]] = {}
 _cache_ttl = 60  # 缓存有效期（秒）
 
+# 图片尺寸缓存（避免每次都读取图片头信息）
+# 结构: {dataset_path: {filename: (width, height, mtime)}}
+_dimension_cache: dict[str, dict] = {}
+
+def _load_dimension_cache(dataset_path: Path) -> dict:
+    """从 JSON 文件加载尺寸缓存"""
+    cache_file = dataset_path / ".sizes_cache.json"
+    if cache_file.exists():
+        try:
+            import json
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            pass
+    return {}
+
+def _save_dimension_cache(dataset_path: Path, cache: dict):
+    """保存尺寸缓存到 JSON 文件"""
+    cache_file = dataset_path / ".sizes_cache.json"
+    try:
+        import json
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(cache, f)
+    except:
+        pass
+
+def _get_image_dimensions(file: Path, dim_cache: dict) -> tuple[int, int]:
+    """获取图片尺寸，优先使用缓存"""
+    filename = file.name
+    try:
+        mtime = file.stat().st_mtime
+    except:
+        mtime = 0
+    
+    # 检查缓存是否有效
+    if filename in dim_cache:
+        cached = dim_cache[filename]
+        if len(cached) >= 3 and cached[2] == mtime:
+            return cached[0], cached[1]
+    
+    # 读取图片尺寸（只读取头信息，不加载整个图片）
+    try:
+        with Image.open(file) as img:
+            w, h = img.size
+            dim_cache[filename] = [w, h, mtime]
+            return w, h
+    except:
+        return 0, 0
+
 def _get_cached_files_and_size(path: Path) -> tuple[list, int]:
     """获取缓存的文件列表和总大小，过期则重新扫描"""
     import time
@@ -92,6 +141,10 @@ async def scan_dataset(request: DatasetScanRequest):
         end_idx = min(start_idx + page_size, total_count)
         page_files = all_files[start_idx:end_idx]
         
+        # 加载尺寸缓存
+        dim_cache = _load_dimension_cache(path)
+        cache_modified = False
+        
         # 构建响应（恢复标注和缓存状态）
         images = []
         for file in page_files:
@@ -118,12 +171,18 @@ async def scan_dataset(request: DatasetScanRequest):
                     for suffix in ALL_TEXT_SUFFIXES
                 )
                 
+                # 获取图片尺寸（使用缓存系统）
+                old_cache_size = len(dim_cache)
+                img_width, img_height = _get_image_dimensions(file, dim_cache)
+                if len(dim_cache) > old_cache_size:
+                    cache_modified = True
+                
                 encoded_path = urllib.parse.quote(str(file), safe='')
                 images.append({
                     "path": str(file),
                     "filename": file.name,
-                    "width": 0,
-                    "height": 0,
+                    "width": img_width,
+                    "height": img_height,
                     "size": size,
                     "caption": caption,
                     "hasLatentCache": has_latent_cache,
@@ -132,6 +191,10 @@ async def scan_dataset(request: DatasetScanRequest):
                 })
             except Exception:
                 continue
+        
+        # 保存尺寸缓存（仅当有新增时）
+        if cache_modified:
+            _save_dimension_cache(path, dim_cache)
         
         return {
             "path": str(path),
